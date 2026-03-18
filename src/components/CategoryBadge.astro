@@ -1,0 +1,34 @@
+---
+import { CATEGORIES, type CategoryKey } from '../lib/constants';
+
+interface Props {
+  category: CategoryKey;
+  size?: 'sm' | 'md';
+  linked?: boolean;
+}
+
+const { category, size = 'sm', linked = true } = Astro.props;
+const info = CATEGORIES[category];
+
+const colors: Record<CategoryKey, string> = {
+  sql: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+  'web-analytics': 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+  'data-visualization': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  'marketing-analytics': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+};
+
+const sizeClasses = size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-3 py-1 text-sm';
+const baseClasses = `inline-flex items-center rounded-full border font-medium ${sizeClasses} ${colors[category]}`;
+
+const Tag = linked ? 'a' : 'span';
+---
+
+{linked ? (
+  <a href={`/blog/category/${category}`} class={`${baseClasses} transition-opacity hover:opacity-80`}>
+    {info.label}
+  </a>
+) : (
+  <span class={baseClasses}>
+    {info.label}
+  </span>
+)}

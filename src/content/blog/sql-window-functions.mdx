@@ -1,0 +1,131 @@
+---
+title: "Оконные функции SQL: полное руководство с примерами"
+description: "Разбираем ROW_NUMBER, RANK, LAG, LEAD и другие оконные функции на практических примерах из маркетинговой аналитики."
+pubDate: 2026-03-10
+category: sql
+tags: ["sql", "оконные функции", "аналитика"]
+draft: false
+---
+
+Оконные функции — один из самых мощных инструментов аналитического SQL. Они позволяют выполнять вычисления по набору строк, связанных с текущей строкой, без группировки данных.
+
+## Что такое оконные функции?
+
+В отличие от агрегатных функций, оконные функции не схлопывают строки. Каждая строка сохраняет свою индивидуальность, но получает доступ к данным «окна» — набора связанных строк.
+
+```sql
+SELECT
+  user_id,
+  order_date,
+  amount,
+  SUM(amount) OVER (
+    PARTITION BY user_id
+    ORDER BY order_date
+    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+  ) AS running_total
+FROM orders;
+```
+
+## ROW_NUMBER, RANK и DENSE_RANK
+
+Эти функции нумеруют строки внутри каждого окна:
+
+```sql
+SELECT
+  campaign_name,
+  ad_spend,
+  conversions,
+  ROW_NUMBER() OVER (ORDER BY conversions DESC) AS rn,
+  RANK() OVER (ORDER BY conversions DESC) AS rnk,
+  DENSE_RANK() OVER (ORDER BY conversions DESC) AS dense_rnk
+FROM campaigns
+WHERE month = '2026-03';
+```
+
+**Разница между ними:**
+
+- `ROW_NUMBER()` — уникальный номер для каждой строки
+- `RANK()` — одинаковый ранг для равных значений, следующий ранг пропускается
+- `DENSE_RANK()` — одинаковый ранг для равных значений, без пропусков
+
+## LAG и LEAD: сравниваем с предыдущими периодами
+
+Это must-have для маркетинговой аналитики. Представьте: нужно сравнить конверсию каждого дня с предыдущим.
+
+```sql
+SELECT
+  event_date,
+  sessions,
+  conversions,
+  LAG(conversions, 1) OVER (ORDER BY event_date) AS prev_day_conv,
+  conversions - LAG(conversions, 1) OVER (ORDER BY event_date) AS conv_diff,
+  ROUND(
+    (conversions - LAG(conversions, 1) OVER (ORDER BY event_date))::numeric
+    / NULLIF(LAG(conversions, 1) OVER (ORDER BY event_date), 0) * 100,
+    1
+  ) AS conv_change_pct
+FROM daily_metrics
+WHERE event_date >= CURRENT_DATE - INTERVAL '30 days';
+```
+
+## NTILE: сегментация пользователей
+
+`NTILE` делит строки на N равных групп — идеально для RFM-анализа:
+
+```sql
+SELECT
+  user_id,
+  total_revenue,
+  last_order_date,
+  order_count,
+  NTILE(5) OVER (ORDER BY total_revenue DESC) AS revenue_quintile,
+  NTILE(5) OVER (ORDER BY last_order_date DESC) AS recency_quintile,
+  NTILE(5) OVER (ORDER BY order_count DESC) AS frequency_quintile
+FROM user_metrics;
+```
+
+## Практический кейс: когортный анализ
+
+Соберём когортный анализ retention пользователей с помощью оконных функций:
+
+```sql
+WITH user_cohorts AS (
+  SELECT
+    user_id,
+    MIN(DATE_TRUNC('month', first_visit_date)) AS cohort_month
+  FROM users
+  GROUP BY user_id
+),
+monthly_activity AS (
+  SELECT
+    uc.cohort_month,
+    DATE_TRUNC('month', e.event_date) AS activity_month,
+    COUNT(DISTINCT e.user_id) AS active_users
+  FROM events e
+  JOIN user_cohorts uc ON e.user_id = uc.user_id
+  GROUP BY 1, 2
+)
+SELECT
+  cohort_month,
+  activity_month,
+  active_users,
+  FIRST_VALUE(active_users) OVER (
+    PARTITION BY cohort_month
+    ORDER BY activity_month
+  ) AS cohort_size,
+  ROUND(
+    active_users::numeric /
+    FIRST_VALUE(active_users) OVER (
+      PARTITION BY cohort_month
+      ORDER BY activity_month
+    ) * 100, 1
+  ) AS retention_pct
+FROM monthly_activity
+ORDER BY cohort_month, activity_month;
+```
+
+## Итого
+
+Оконные функции экономят десятки строк кода и делают запросы в разы читаемее. Для маркетинговой аналитики это незаменимый инструмент — от расчёта retention до построения RFM-сегментации.
+
+В следующих постах разберём продвинутые паттерны: скользящие средние, cumulative metrics и frame specifications.

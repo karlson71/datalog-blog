@@ -1,0 +1,27 @@
+---
+import CategoryBadge from './CategoryBadge.astro';
+import { formatDate, formatReadingTime } from '../lib/utils';
+import type { CategoryKey } from '../lib/constants';
+
+interface Props {
+  pubDate: Date;
+  minutesRead?: string;
+  category: CategoryKey;
+  showCategory?: boolean;
+}
+
+const { pubDate, minutesRead, category, showCategory = true } = Astro.props;
+---
+
+<div class="flex flex-wrap items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+  {showCategory && <CategoryBadge category={category} />}
+  <time datetime={pubDate.toISOString()}>
+    {formatDate(pubDate)}
+  </time>
+  {minutesRead && (
+    <>
+      <span>&middot;</span>
+      <span>{formatReadingTime(minutesRead)}</span>
+    </>
+  )}
+</div>

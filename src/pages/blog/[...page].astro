@@ -1,0 +1,55 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BlogPostCard from '../../components/BlogPostCard.astro';
+import Pagination from '../../components/Pagination.astro';
+import CategoryBadge from '../../components/CategoryBadge.astro';
+import { getCollection } from 'astro:content';
+import { CATEGORIES, type CategoryKey } from '../../lib/constants';
+import type { GetStaticPaths } from 'astro';
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const posts = (await getCollection('blog'))
+    .filter((post) => !post.data.draft)
+    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+  return paginate(posts, { pageSize: 10 });
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+const categoryEntries = Object.entries(CATEGORIES) as [CategoryKey, (typeof CATEGORIES)[CategoryKey]][];
+---
+
+<BaseLayout title="Блог" description="Статьи о SQL, веб-аналитике, визуализации данных и маркетинговой аналитике.">
+  <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-4xl">
+      Блог
+    </h1>
+    <p class="mt-2 text-zinc-600 dark:text-zinc-400">
+      Практические руководства и кейсы из мира данных.
+    </p>
+
+    <!-- Category filters -->
+    <div class="mt-6 flex flex-wrap gap-2">
+      <a
+        href="/blog"
+        class="inline-flex items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-sm font-medium text-cyan-600 dark:text-cyan-400"
+      >
+        Все
+      </a>
+      {categoryEntries.map(([key, cat]) => (
+        <a
+          href={`/blog/category/${key}`}
+          class="inline-flex items-center rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium text-zinc-600 transition-colors hover:border-cyan-500/30 hover:text-cyan-600 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-cyan-400/30 dark:hover:text-cyan-400"
+        >
+          {cat.label}
+        </a>
+      ))}
+    </div>
+
+    <!-- Posts -->
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {page.data.map((post) => <BlogPostCard post={post} />)}
+    </div>
+
+    <Pagination currentPage={page.currentPage} lastPage={page.lastPage} baseUrl="/blog" />
+  </div>
+</BaseLayout>

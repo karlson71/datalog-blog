@@ -1,0 +1,90 @@
+---
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings: Heading[];
+}
+
+const { headings } = Astro.props;
+const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
+---
+
+{filteredHeadings.length > 0 && (
+  <nav class="toc" aria-label="Содержание">
+    <!-- Mobile: collapsible -->
+    <details class="rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
+      <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+        Содержание
+      </summary>
+      <ul class="px-4 pb-4">
+        {filteredHeadings.map((heading) => (
+          <li class={heading.depth === 3 ? 'ml-4' : ''}>
+            <a
+              href={`#${heading.slug}`}
+              class="block py-1 text-sm text-zinc-500 transition-colors hover:text-cyan-500 dark:text-zinc-400 dark:hover:text-cyan-400"
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </details>
+
+    <!-- Desktop: sticky sidebar -->
+    <div class="hidden lg:block">
+      <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        Содержание
+      </p>
+      <ul class="space-y-1 border-l border-zinc-200 dark:border-zinc-800">
+        {filteredHeadings.map((heading) => (
+          <li class={heading.depth === 3 ? 'ml-3' : ''}>
+            <a
+              href={`#${heading.slug}`}
+              data-slug={heading.slug}
+              class="toc-link -ml-px block border-l border-transparent py-1 pl-4 text-sm text-zinc-500 transition-colors hover:border-cyan-400 hover:text-cyan-500 dark:text-zinc-400 dark:hover:text-cyan-400"
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </nav>
+)}
+
+<script>
+  function initTOC() {
+    const links = document.querySelectorAll('.toc-link');
+    if (!links.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            links.forEach((link) => {
+              link.classList.remove('!border-cyan-400', '!text-cyan-400');
+            });
+            const active = document.querySelector(
+              `.toc-link[data-slug="${entry.target.id}"]`
+            );
+            active?.classList.add('!border-cyan-400', '!text-cyan-400');
+          }
+        }
+      },
+      { rootMargin: '-80px 0px -70% 0px' }
+    );
+
+    links.forEach((link) => {
+      const slug = (link as HTMLElement).dataset.slug;
+      const heading = slug ? document.getElementById(slug) : null;
+      if (heading) observer.observe(heading);
+    });
+  }
+
+  initTOC();
+  document.addEventListener('astro:after-swap', initTOC);
+</script>

@@ -1,0 +1,76 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HeroSection from '../components/HeroSection.astro';
+import BlogPostCard from '../components/BlogPostCard.astro';
+import TelegramCTA from '../components/TelegramCTA.astro';
+import { getCollection } from 'astro:content';
+import { SITE_DESCRIPTION, CATEGORIES, type CategoryKey } from '../lib/constants';
+
+const posts = (await getCollection('blog'))
+  .filter((post) => !post.data.draft)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 6);
+
+const categoryEntries = Object.entries(CATEGORIES) as [CategoryKey, (typeof CATEGORIES)[CategoryKey]][];
+---
+
+<BaseLayout title="Аналитика на практике" description={SITE_DESCRIPTION}>
+  <HeroSection />
+
+  <!-- Latest posts -->
+  <section class="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+    <div class="flex items-end justify-between">
+      <h2 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-3xl">
+        Последние статьи
+      </h2>
+      <a
+        href="/blog"
+        class="hidden text-sm font-medium text-cyan-600 transition-colors hover:text-cyan-500 dark:text-cyan-400 dark:hover:text-cyan-300 sm:inline-flex sm:items-center sm:gap-1"
+      >
+        Все статьи
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+        </svg>
+      </a>
+    </div>
+
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {posts.map((post) => <BlogPostCard post={post} />)}
+    </div>
+
+    <div class="mt-6 text-center sm:hidden">
+      <a
+        href="/blog"
+        class="inline-flex items-center gap-1 text-sm font-medium text-cyan-600 dark:text-cyan-400"
+      >
+        Все статьи &rarr;
+      </a>
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <section class="border-t border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+    <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+      <h2 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-3xl">
+        Темы
+      </h2>
+      <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {categoryEntries.map(([key, cat]) => (
+          <a
+            href={`/blog/category/${key}`}
+            class="group rounded-xl border border-zinc-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/5 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-cyan-400/30"
+          >
+            <h3 class="font-semibold text-zinc-900 transition-colors group-hover:text-cyan-600 dark:text-zinc-100 dark:group-hover:text-cyan-400">
+              {cat.label}
+            </h3>
+            <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+              {cat.description}
+            </p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <TelegramCTA variant="bottom" />
+</BaseLayout>
