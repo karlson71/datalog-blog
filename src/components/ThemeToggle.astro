@@ -48,13 +48,18 @@
     });
   }
 
+  function handleThemeClick() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    updateIcons();
+  }
+
   function initThemeToggle() {
     const btn = document.getElementById('theme-toggle');
-    btn?.addEventListener('click', () => {
-      const isDark = document.documentElement.classList.toggle('dark');
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-      updateIcons();
-    });
+    if (!btn) return;
+    // Remove old listener to prevent duplication on View Transitions
+    btn.removeEventListener('click', handleThemeClick);
+    btn.addEventListener('click', handleThemeClick);
     updateIcons();
   }
 
