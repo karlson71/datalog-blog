@@ -4,6 +4,11 @@
 
 **Даталог** — персональный блог специалиста по маркетинговой аналитике. Название: data + лог (блог/журнал). Цель — привлекать подписчиков из органического поиска (Яндекс, Google) и конвертировать в Telegram-канал (@datalog_blog). Контент на русском языке.
 
+- **Сайт:** https://datalog-blog.vercel.app
+- **GitHub:** https://github.com/karlson71/datalog-blog
+- **Telegram:** https://t.me/datalog_blog (@datalog_blog)
+- **Автор/бренд:** Даталог (анонимный экспертный голос, не личный бренд)
+
 ## Стек
 
 - **Astro 5** — статический генератор, zero JS по дефолту
@@ -11,6 +16,7 @@
 - **MDX** — контент блога (markdown + компоненты)
 - **astro-expressive-code** — подсветка синтаксиса с кнопкой копирования
 - **TypeScript** — strict mode
+- **Деплой:** Vercel (ручной через `vercel --prod`, автодеплой пока не подключён)
 
 ## Команды
 
@@ -18,39 +24,50 @@
 npm run dev      # Запуск dev-сервера (http://localhost:4321)
 npm run build    # Сборка в ./dist
 npm run preview  # Превью сборки
+vercel --prod    # Деплой на Vercel + vercel alias ... datalog-blog.vercel.app
 ```
 
 ## Структура проекта
 
 ```
 src/
-├── components/       # Astro-компоненты
-│   ├── BaseHead.astro       # <head>: мета, OG, шрифты, тема
-│   ├── SEO.astro            # JSON-LD structured data
-│   ├── Header.astro         # Навигация + мобильное меню
-│   ├── Footer.astro         # Футер: копирайт, TG, RSS
-│   ├── ThemeToggle.astro    # Dark/light переключатель
-│   ├── HeroSection.astro    # Главная: hero-блок
-│   ├── BlogPostCard.astro   # Карточка поста в листинге
-│   ├── PostMeta.astro       # Дата + время чтения + категория
-│   ├── CategoryBadge.astro  # Цветной бейдж категории
-│   ├── TableOfContents.astro # TOC: аккордеон (mobile) / sticky sidebar (desktop)
-│   ├── ReadingProgress.astro # Прогресс-бар скролла
-│   ├── TelegramCTA.astro    # CTA подписки (sidebar|inline|bottom варианты)
-│   ├── ShareButtons.astro   # Шеринг: Telegram, X, копировать ссылку
-│   ├── RelatedPosts.astro   # Похожие статьи (скоринг)
-│   └── Pagination.astro     # Пагинация списка постов
+├── components/
+│   ├── BaseHead.astro         # <head>: мета, OG, шрифты, тема
+│   ├── SEO.astro              # JSON-LD structured data
+│   ├── Header.astro           # Навигация + мобильное меню + поиск
+│   ├── Footer.astro           # Футер: копирайт, TG, RSS
+│   ├── ThemeToggle.astro      # Dark/light переключатель
+│   ├── SearchDialog.astro     # Мгновенный поиск (⌘K / Ctrl+K)
+│   ├── BookmarkButton.astro   # Сохранение статей в localStorage
+│   ├── BackToTop.astro        # Кнопка "наверх" при скролле
+│   ├── HeroSection.astro      # Главная: hero-блок
+│   ├── BlogPostCard.astro     # Карточка поста (с закладкой)
+│   ├── PostMeta.astro         # Дата + время чтения + категория
+│   ├── CategoryBadge.astro    # Цветной бейдж категории (linked prop!)
+│   ├── TableOfContents.astro  # TOC: аккордеон (mobile) / sticky sidebar (desktop)
+│   ├── ReadingProgress.astro  # Прогресс-бар скролла
+│   ├── TelegramCTA.astro      # CTA подписки (sidebar|inline|bottom варианты)
+│   ├── ShareButtons.astro     # Шеринг: Telegram, X, копировать ссылку
+│   ├── RelatedPosts.astro     # Похожие статьи (скоринг)
+│   ├── Pagination.astro       # Пагинация списка постов
+│   └── mdx/                   # Компоненты для использования в MDX-постах
+│       ├── VideoEmbed.astro   # YouTube/RuTube с lazy-load
+│       ├── Diagram.astro      # Диаграммы с lightbox
+│       ├── Screenshot.astro   # Скриншоты (опц. browser chrome mockup)
+│       ├── Callout.astro      # Блоки info/warning/tip/danger
+│       └── StepByStep.astro   # Пошаговые инструкции с нумерацией
 ├── content/
-│   └── blog/                # MDX-посты (frontmatter + контент)
-├── content.config.ts        # Схема коллекции blog (Zod валидация)
+│   └── blog/                  # MDX-посты (6 статей)
+├── content.config.ts          # Схема коллекции blog (Zod валидация)
 ├── layouts/
-│   ├── BaseLayout.astro     # Корневой layout (html shell)
-│   ├── BlogPost.astro       # Layout поста: 2 колонки, TOC, CTA, related
-│   └── PageLayout.astro     # Layout для статичных страниц
+│   ├── BaseLayout.astro       # Корневой layout (html shell)
+│   ├── BlogPost.astro         # Layout поста: 2 колонки, TOC, CTA, related
+│   └── PageLayout.astro       # Layout для статичных страниц
 ├── pages/
-│   ├── index.astro          # Главная: Hero + посты + категории + TG CTA
-│   ├── about.astro          # Страница "Обо мне"
-│   ├── rss.xml.ts           # RSS фид
+│   ├── index.astro            # Главная: Hero + посты + категории + TG CTA
+│   ├── about.astro            # Страница "О проекте"
+│   ├── saved.astro            # Сохранённые статьи (localStorage)
+│   ├── rss.xml.ts             # RSS фид
 │   └── blog/
 │       ├── [...page].astro          # Пагинированный список постов
 │       ├── [...slug].astro          # Динамический роут поста
@@ -58,10 +75,10 @@ src/
 ├── plugins/
 │   └── remark-reading-time.mjs  # Remark-плагин: расчёт времени чтения
 ├── styles/
-│   └── global.css           # Tailwind config, dark mode, шрифты, цвета
+│   └── global.css             # Tailwind config, dark mode, шрифты, цвета
 └── lib/
-    ├── constants.ts         # Метаданные сайта, категории, навигация
-    └── utils.ts             # formatDate, formatReadingTime, getRelatedPosts
+    ├── constants.ts           # Метаданные сайта, категории, навигация
+    └── utils.ts               # formatDate, formatReadingTime, getRelatedPosts
 ```
 
 ## Дизайн-система
@@ -82,6 +99,26 @@ src/
 | `data-visualization` | Визуализация данных | emerald |
 | `marketing-analytics` | Маркетинговая аналитика | amber |
 
+## Текущие статьи (6 шт.)
+
+1. `metrica-vs-ga4.mdx` — Яндекс Метрика vs GA4 (web-analytics, 2026-03-18)
+2. `sql-funnel-analysis.mdx` — Анализ воронки на чистом SQL (sql, 2026-03-17)
+3. `utm-hell-fix.mdx` — UTM-разметка: бардак и как починить (marketing-analytics, 2026-03-15)
+4. `sql-window-functions.mdx` — Оконные функции SQL (sql, 2026-03-10)
+5. `yandex-metrica-ecommerce.mdx` — Ecommerce в Яндекс Метрике (web-analytics, 2026-03-05)
+6. `datalens-dashboard-guide.mdx` — Дашборд в DataLens (data-visualization, 2026-02-28)
+
+## Ключевые фичи
+
+- **Мгновенный поиск** — `⌘K` / кнопка лупы, поиск по заголовкам, описаниям, тегам, категориям; подсветка совпадений; навигация стрелками + Enter
+- **Закладки** — сохранение статей в localStorage (`datalog_bookmarks`), страница `/saved`, кнопка на карточках и в шапке статьи
+- **TOC** — оглавление: мобильный аккордеон + sticky sidebar на десктопе с IntersectionObserver
+- **Прогресс чтения** — cyan градиент progress bar
+- **Кнопка "Наверх"** — появляется при scrollY > 400
+- **Share** — Telegram, X/Twitter, копировать ссылку
+- **Related posts** — скоринг: категория +3, совпадающие теги +1
+- **MDX-компоненты** — VideoEmbed, Diagram, Screenshot, Callout, StepByStep
+
 ## Как добавить новый пост
 
 Создать файл `src/content/blog/slug-name.mdx`:
@@ -96,7 +133,14 @@ tags: ["sql", "clickhouse"]
 draft: false
 ---
 
+import Callout from '../../components/mdx/Callout.astro';
+import VideoEmbed from '../../components/mdx/VideoEmbed.astro';
+
 Контент в MDX...
+
+<Callout type="tip" title="Совет">
+Текст совета
+</Callout>
 ```
 
 ## SEO
@@ -115,24 +159,23 @@ draft: false
 - Тема инициализируется inline-скриптом в `<head>` чтобы избежать FOUC
 - View Transitions используют `ClientRouter` из `astro:transitions`
 - Content collections используют `glob()` loader (Astro 5 API)
+- **CategoryBadge внутри карточек**: передавать `linked={false}` чтобы избежать вложенных `<a>` тегов
+- **SearchDialog** рендерится ВНЕ `<nav>` (после `</header>`), иначе скрыт на мобилке
+- Деплой: `vercel --prod --yes` + `vercel alias <url> datalog-blog.vercel.app`
+- GitHub push: `gh auth setup-git` нужен для HTTPS credentials
 
 ## Текущее состояние
 
-- [x] Проект инициализирован и собирается (`npm run build` — OK, <1 сек)
-- [x] 3 демо-поста написаны (SQL, Яндекс Метрика, DataLens)
-- [x] Адаптивный дизайн проверен (mobile + desktop)
+- [x] Проект инициализирован и собирается (14 страниц, ~1.2 сек)
+- [x] 6 статей написаны
+- [x] Адаптивный дизайн (mobile + desktop)
 - [x] Dark/light тема работает
-- [ ] Telegram-канал ещё не создан (заглушка `@yourchannel` в constants.ts)
-- [ ] Имя автора — заглушка `Автор` в constants.ts
-- [ ] Git-репозиторий не инициализирован
-- [ ] Не задеплоен на Vercel
-- [ ] Яндекс.Вебмастер и Метрика не подключены
-- [ ] Домен не настроен (сейчас `analytics-blog.vercel.app` — placeholder)
-
-## Деплой
-
-Планируется на **Vercel**:
-- Build command: `npm run build`
-- Output directory: `dist`
-- Node.js 20+
-- Переменная `site` в `astro.config.mjs` — обновить на реальный домен
+- [x] Название: Даталог
+- [x] Telegram-канал создан (@datalog_blog с группой обсуждений)
+- [x] Git + GitHub (github.com/karlson71/datalog-blog)
+- [x] Задеплоен на Vercel (datalog-blog.vercel.app)
+- [x] Поиск, закладки, back-to-top, MDX-компоненты
+- [ ] Автодеплой Vercel ← GitHub (нужно связать аккаунты: vercel.com/account/login-connections)
+- [ ] Яндекс.Вебмастер + отправка sitemap
+- [ ] Яндекс.Метрика (скрипт за env-переменной)
+- [ ] Реальный контент (заменить демо-посты на боевые)
