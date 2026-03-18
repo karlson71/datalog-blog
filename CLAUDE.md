@@ -4,7 +4,9 @@
 
 **Даталог** — персональный блог специалиста по маркетинговой аналитике. Название: data + лог (блог/журнал). Цель — привлекать подписчиков из органического поиска (Яндекс, Google) и конвертировать в Telegram-канал (@datalog_blog). Контент на русском языке.
 
-- **Сайт:** https://datalog-blog.vercel.app
+- **Сайт:** https://datalog-blog.ru (домен куплен на Timeweb)
+- **Хостинг:** Timeweb Cloud VPS (1 CPU, 1 GB RAM, 15 GB NVMe, Ubuntu 24.04)
+- **IP:** 5.42.122.154
 - **GitHub:** https://github.com/karlson71/datalog-blog
 - **Telegram:** https://t.me/datalog_blog (@datalog_blog)
 - **Автор/бренд:** Даталог (анонимный экспертный голос, не личный бренд)
@@ -16,7 +18,8 @@
 - **MDX** — контент блога (markdown + компоненты)
 - **astro-expressive-code** — подсветка синтаксиса с кнопкой копирования
 - **TypeScript** — strict mode
-- **Деплой:** Vercel (ручной через `vercel --prod`, автодеплой пока не подключён)
+- **Хостинг:** Timeweb Cloud VPS + nginx + Let's Encrypt
+- **Деплой:** GitHub Actions → rsync на VPS (автодеплой при push в main)
 
 ## Команды
 
@@ -24,7 +27,7 @@
 npm run dev      # Запуск dev-сервера (http://localhost:4321)
 npm run build    # Сборка в ./dist
 npm run preview  # Превью сборки
-vercel --prod    # Деплой на Vercel + vercel alias ... datalog-blog.vercel.app
+git push origin main  # Автодеплой через GitHub Actions → rsync → VPS
 ```
 
 ## Структура проекта
@@ -89,6 +92,12 @@ src/
 └── lib/
     ├── constants.ts           # Метаданные сайта, категории, навигация
     └── utils.ts               # formatDate, formatReadingTime, getRelatedPosts
+server/
+├── setup.sh                   # Провижининг VPS (nginx, certbot, deploy user, ufw)
+└── nginx.conf                 # Production nginx (SSL, gzip, security headers)
+.github/
+└── workflows/
+    └── deploy.yml             # CI/CD: build + rsync на VPS
 ```
 
 ## Дизайн-система
@@ -129,7 +138,7 @@ src/
 - **Related posts** — скоринг: категория +3, совпадающие теги +1
 - **MDX-компоненты** — VideoEmbed, Diagram, Screenshot, Callout, StepByStep, SQLPlayground, TLDR
 - **SQL Playground** — интерактивная песочница на sql.js (SQLite→WASM), Ctrl/Cmd+Enter запуск, кастомный setup (CREATE/INSERT), таблица результатов
-- **Копирование кода как картинка** — html2canvas 2x + циановый watermark «datalog-blog.vercel.app», clipboard API + fallback download
+- **Копирование кода как картинка** — html2canvas 2x + циановый watermark «datalog-blog.ru», clipboard API + fallback download
 - **Реакции** — 🔥 Полезно, 💡 Узнал новое, 🤯 Вау; localStorage (`datalog_reactions`), псевдо-коммьюнити счётчики
 - **Трекер чтения** — прогресс-бар + мотивационные сообщения, MarkAsRead при 70% скролла; localStorage (`datalog_read_posts`)
 - **Бейджи сложности** — beginner (Новичок, emerald), intermediate (Практик, cyan), advanced (Продвинутый, violet); на карточках и в шапке поста
@@ -191,8 +200,18 @@ import SQLPlayground from '../../components/mdx/SQLPlayground.astro';
 - Content collections используют `glob()` loader (Astro 5 API)
 - **CategoryBadge внутри карточек**: передавать `linked={false}` чтобы избежать вложенных `<a>` тегов
 - **SearchDialog** рендерится ВНЕ `<nav>` (после `</header>`), иначе скрыт на мобилке
-- Деплой: `vercel --prod --yes` + `vercel alias <url> datalog-blog.vercel.app`
-- GitHub push: `gh auth setup-git` нужен для HTTPS credentials
+- GitHub push: `gh auth setup-git` нужен для HTTPS credentials, `gh auth refresh -s workflow` для пуша workflow-файлов
+
+## Деплой и инфраструктура
+
+- **VPS:** Timeweb Cloud, IP `5.42.122.154`, Ubuntu 24.04
+- **Домен:** datalog-blog.ru (куплен на Timeweb Hosting, DNS A-записи → VPS)
+- **Пользователь деплоя:** `deploy` (SSH-ключ, без root-доступа для CI)
+- **Web root:** `/var/www/datalog/`
+- **nginx:** конфиг в `server/nginx.conf` (gzip, кэширование, security headers, HTTP→HTTPS + www→non-www редиректы)
+- **Провижининг:** `server/setup.sh` (nginx, certbot, deploy user, firewall)
+- **CI/CD:** `.github/workflows/deploy.yml` — на push в main: checkout → Node 22 → npm ci → build → rsync
+- **GitHub Secrets:** `SERVER_IP`, `SERVER_USER`, `SSH_PRIVATE_KEY`
 
 ## Текущее состояние
 
@@ -203,7 +222,8 @@ import SQLPlayground from '../../components/mdx/SQLPlayground.astro';
 - [x] Название: Даталог
 - [x] Telegram-канал создан (@datalog_blog с группой обсуждений)
 - [x] Git + GitHub (github.com/karlson71/datalog-blog)
-- [x] Задеплоен на Vercel (datalog-blog.vercel.app)
+- [x] Задеплоен на Timeweb Cloud VPS (datalog-blog.ru)
+- [x] GitHub Actions автодеплой (push → build → rsync)
 - [x] Поиск (⌘K), закладки, back-to-top, MDX-компоненты
 - [x] SQL Playground (sql.js WASM)
 - [x] Копирование кода как картинка (html2canvas + watermark)
@@ -213,9 +233,25 @@ import SQLPlayground from '../../components/mdx/SQLPlayground.astro';
 - [x] Бейджи сложности (Новичок/Практик/Продвинутый)
 - [x] Динамические OG-изображения (satori + resvg)
 - [x] Горячие клавиши (j/k/b/?//)
-- [ ] Автодеплой Vercel ← GitHub (нужно связать аккаунты: vercel.com/account/login-connections)
+- [x] SSL-сертификат (Let's Encrypt, истекает 2026-06-16)
+- [x] Production nginx.conf с HTTPS, gzip, кэшированием
+- [x] SEO Skill Pack (5 skills для контентного пайплайна)
 - [ ] Яндекс.Вебмастер + отправка sitemap
 - [ ] Яндекс.Метрика (скрипт за env-переменной)
+
+## Контентный пайплайн (Skills)
+
+5 Claude Code Skills в `.claude/skills/` для генерации SEO-оптимизированного экспертного контента:
+
+| # | Skill | Slash-команда | Что делает |
+|---|-------|--------------|------------|
+| 1 | topic-intent-serp | `/topic-intent-serp <тема>` | Анализ интента, подинтентов, SERP-логики, рисков |
+| 2 | article-architect | `/article-architect <бриф>` | Каркас: title, H1-H3, FAQ, компоненты, internal links |
+| 3 | sharp-technical-writer | `/sharp-technical-writer <структура>` | Черновик статьи в MDX с компонентами блога |
+| 4 | seo-refiner-google-yandex | `/seo-refiner-google-yandex <черновик>` | SEO-ревью и доработка под Яндекс + Google |
+| 5 | fact-proof-example-checker | `/fact-proof-example-checker <текст>` | Проверка фактов, галлюцинаций, примеров, caveats |
+
+**Порядок:** topic-intent-serp → article-architect → sharp-technical-writer → seo-refiner → fact-checker
 
 ## Важные зависимости (round 2)
 
