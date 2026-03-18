@@ -49,6 +49,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Fix iOS Safari double-tap on interactive elements */
+button, a, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 ::selection {
   background-color: oklch(0.65 0.15 200 / 0.3);
 }
