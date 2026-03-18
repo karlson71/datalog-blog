@@ -30,5 +30,6 @@ export type CategoryKey = keyof typeof CATEGORIES;
 export const NAV_LINKS = [
   { href: '/', label: 'Главная' },
   { href: '/blog', label: 'Блог' },
+  { href: '/saved', label: 'Сохранённые' },
   { href: '/about', label: 'О проекте' },
 ];

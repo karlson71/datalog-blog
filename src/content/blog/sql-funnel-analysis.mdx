@@ -1,0 +1,273 @@
+---
+title: "Анализ воронки на чистом SQL: от визита до покупки"
+description: "Строим полный анализ воронки конверсий в ClickHouse: расчёт CR между шагами, поиск узких мест, когортные воронки."
+pubDate: 2026-03-17
+category: sql
+tags: ["sql", "воронки", "конверсия", "clickhouse", "ecommerce"]
+draft: false
+---
+
+У тебя есть данные о каждом клике пользователя. Ты знаешь, что конверсия сайта — 2%. Но между «зашёл на сайт» и «купил» есть 4-5 шагов, и ты не знаешь, на каком из них теряешь 98% людей. Давай это исправим — на чистом SQL, без BI-конструкторов и готовых инструментов.
+
+## Постановка задачи
+
+Типичная воронка интернет-магазина:
+
+1. **Визит** — пользователь зашёл на сайт
+2. **Каталог** — открыл страницу категории
+3. **Карточка товара** — посмотрел конкретный товар
+4. **Корзина** — добавил товар
+5. **Покупка** — оформил и оплатил заказ
+
+Нам нужно: количество пользователей на каждом шаге, конверсию между шагами и общую конверсию. Работаем с ClickHouse.
+
+## Структура данных
+
+Допустим, у нас таблица событий:
+
+```sql
+CREATE TABLE user_events (
+  user_id UInt64,
+  event_type String,  -- 'visit', 'catalog', 'product_view', 'add_to_cart', 'purchase'
+  event_time DateTime,
+  session_id String,
+  page_url String,
+  product_id Nullable(String),
+  revenue Nullable(Float64)
+) ENGINE = MergeTree()
+ORDER BY (user_id, event_time);
+```
+
+## Шаг 1: Базовая воронка
+
+Считаем уникальных пользователей на каждом шаге:
+
+```sql
+SELECT
+  'visit' AS step,
+  1 AS step_order,
+  COUNT(DISTINCT user_id) AS users
+FROM user_events
+WHERE event_type = 'visit'
+  AND toDate(event_time) BETWEEN '2026-03-01' AND '2026-03-15'
+
+UNION ALL
+
+SELECT 'catalog', 2,
+  COUNT(DISTINCT user_id)
+FROM user_events
+WHERE event_type = 'catalog'
+  AND toDate(event_time) BETWEEN '2026-03-01' AND '2026-03-15'
+
+UNION ALL
+
+SELECT 'product_view', 3,
+  COUNT(DISTINCT user_id)
+FROM user_events
+WHERE event_type = 'product_view'
+  AND toDate(event_time) BETWEEN '2026-03-01' AND '2026-03-15'
+
+UNION ALL
+
+SELECT 'add_to_cart', 4,
+  COUNT(DISTINCT user_id)
+FROM user_events
+WHERE event_type = 'add_to_cart'
+  AND toDate(event_time) BETWEEN '2026-03-01' AND '2026-03-15'
+
+UNION ALL
+
+SELECT 'purchase', 5,
+  COUNT(DISTINCT user_id)
+FROM user_events
+WHERE event_type = 'purchase'
+  AND toDate(event_time) BETWEEN '2026-03-01' AND '2026-03-15'
+
+ORDER BY step_order;
+```
+
+Результат может выглядеть так:
+
+| step | users |
+|---|---|
+| visit | 50,000 |
+| catalog | 32,000 |
+| product_view | 18,000 |
+| add_to_cart | 4,500 |
+| purchase | 1,800 |
+
+Конверсия 3.6%. Неплохо. Но **где именно** проблема?
+
+## Шаг 2: Конверсия между шагами
+
+Вот тут начинается настоящая аналитика:
+
+```sql
+WITH funnel AS (
+  SELECT
+    step,
+    step_order,
+    users,
+    lagInFrame(users) OVER (ORDER BY step_order) AS prev_step_users,
+    first_value(users) OVER (ORDER BY step_order) AS total_visitors
+  FROM (
+    SELECT
+      event_type AS step,
+      multiIf(
+        event_type = 'visit', 1,
+        event_type = 'catalog', 2,
+        event_type = 'product_view', 3,
+        event_type = 'add_to_cart', 4,
+        event_type = 'purchase', 5,
+        0
+      ) AS step_order,
+      COUNT(DISTINCT user_id) AS users
+    FROM user_events
+    WHERE toDate(event_time) BETWEEN '2026-03-01' AND '2026-03-15'
+      AND event_type IN ('visit', 'catalog', 'product_view', 'add_to_cart', 'purchase')
+    GROUP BY event_type
+  )
+)
+SELECT
+  step,
+  users,
+  round(users / total_visitors * 100, 2) AS pct_of_total,
+  if(prev_step_users > 0,
+    round(users / prev_step_users * 100, 2),
+    100
+  ) AS step_conversion,
+  if(prev_step_users > 0,
+    prev_step_users - users,
+    0
+  ) AS dropoff
+FROM funnel
+ORDER BY step_order;
+```
+
+Теперь видна полная картина:
+
+| step | users | pct_of_total | step_conversion | dropoff |
+|---|---|---|---|---|
+| visit | 50,000 | 100% | 100% | 0 |
+| catalog | 32,000 | 64% | 64% | 18,000 |
+| product_view | 18,000 | 36% | 56.25% | 14,000 |
+| add_to_cart | 4,500 | 9% | 25% | 13,500 |
+| purchase | 1,800 | 3.6% | 40% | 2,700 |
+
+**Узкое место очевидно**: переход product_view -> add_to_cart теряет 75% пользователей. 13,500 человек посмотрели товар и ушли. Вот куда копать: цена, описание, фото, отзывы, наличие.
+
+## Шаг 3: Строгая воронка (последовательные шаги)
+
+Предыдущий запрос считает пользователей независимо на каждом шаге. Но настоящая воронка — это **последовательность**: пользователь должен пройти шаг 1, потом шаг 2, потом шаг 3. В ClickHouse для этого есть `windowFunnel`:
+
+```sql
+SELECT
+  level,
+  COUNT(*) AS users
+FROM (
+  SELECT
+    user_id,
+    windowFunnel(86400)(
+      event_time,
+      event_type = 'visit',
+      event_type = 'catalog',
+      event_type = 'product_view',
+      event_type = 'add_to_cart',
+      event_type = 'purchase'
+    ) AS level
+  FROM user_events
+  WHERE toDate(event_time) BETWEEN '2026-03-01' AND '2026-03-15'
+  GROUP BY user_id
+)
+GROUP BY level
+ORDER BY level;
+```
+
+`windowFunnel(86400)` — окно в 86400 секунд (24 часа). Пользователь должен пройти все шаги последовательно в течение суток. Это гораздо строже и ближе к реальности.
+
+## Шаг 4: Время между шагами
+
+Не менее важно понять, **сколько времени** занимает каждый переход:
+
+```sql
+WITH user_steps AS (
+  SELECT
+    user_id,
+    event_type,
+    event_time,
+    multiIf(
+      event_type = 'visit', 1,
+      event_type = 'catalog', 2,
+      event_type = 'product_view', 3,
+      event_type = 'add_to_cart', 4,
+      event_type = 'purchase', 5,
+      0
+    ) AS step_order
+  FROM user_events
+  WHERE toDate(event_time) BETWEEN '2026-03-01' AND '2026-03-15'
+),
+step_times AS (
+  SELECT
+    user_id,
+    event_type AS step,
+    step_order,
+    event_time,
+    lagInFrame(event_time) OVER (
+      PARTITION BY user_id ORDER BY step_order, event_time
+    ) AS prev_step_time
+  FROM user_steps
+)
+SELECT
+  step,
+  round(avg(dateDiff('minute', prev_step_time, event_time)), 1) AS avg_minutes,
+  quantile(0.5)(dateDiff('minute', prev_step_time, event_time)) AS median_minutes,
+  quantile(0.9)(dateDiff('minute', prev_step_time, event_time)) AS p90_minutes
+FROM step_times
+WHERE prev_step_time IS NOT NULL
+  AND step_order > 1
+GROUP BY step, step_order
+ORDER BY step_order;
+```
+
+Если медианное время от карточки товара до корзины — 25 минут, а p90 — 3 часа, значит люди уходят «подумать» и не возвращаются. Это сигнал: нужен ретаргетинг или push-уведомление о брошенном просмотре.
+
+## Шаг 5: Когортные воронки
+
+Самое мощное — сравнить воронки для разных сегментов:
+
+```sql
+SELECT
+  utm_source,
+  countDistinctIf(user_id, event_type = 'visit') AS visits,
+  countDistinctIf(user_id, event_type = 'add_to_cart') AS carts,
+  countDistinctIf(user_id, event_type = 'purchase') AS purchases,
+  round(
+    countDistinctIf(user_id, event_type = 'purchase')
+    / countDistinctIf(user_id, event_type = 'visit') * 100, 2
+  ) AS total_cr,
+  round(
+    countDistinctIf(user_id, event_type = 'purchase')
+    / countDistinctIf(user_id, event_type = 'add_to_cart') * 100, 2
+  ) AS cart_to_purchase_cr
+FROM user_events
+WHERE toDate(event_time) BETWEEN '2026-03-01' AND '2026-03-15'
+GROUP BY utm_source
+HAVING visits > 100
+ORDER BY total_cr DESC;
+```
+
+Когда видишь, что у `yandex` конверсия корзины в покупку 50%, а у `vk` — только 20%, становится понятно: проблема не в сайте, а в качестве трафика. Или наоборот — если конверсия визита в корзину одинаковая, но на чекауте VK проседает, возможно дело в способах оплаты, которые предпочитает эта аудитория.
+
+## Что делать с результатами
+
+1. **Самый большой dropoff** — это твой приоритет номер один. Не оптимизируй всё подряд, бей в самое больное место.
+
+2. **Время между шагами** покажет, где нужен ретаргетинг, а где пользователь просто застрял в UI.
+
+3. **Когортные воронки** помогут отделить проблемы трафика от проблем сайта. Если воронка одинаково плохая для всех источников — проблема внутри. Если только для одного — проблема в аудитории.
+
+4. **Запускай еженедельно.** Воронка — это не разовый анализ. Это пульс твоего бизнеса. Автоматизируй и следи за трендом.
+
+## Итого
+
+Воронка на SQL — это не сложно. Это 5-6 запросов, которые дают тебе полную картину: где теряются пользователи, сколько времени занимает конверсия, и какие каналы приводят качественный трафик. Не жди, пока BI-инструмент сделает это за тебя — он всё равно не покроет все нюансы. Пиши SQL, находи инсайты, принимай решения на данных.

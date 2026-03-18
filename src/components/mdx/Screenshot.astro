@@ -1,0 +1,164 @@
+---
+interface Props {
+  src: string;
+  alt: string;
+  caption?: string;
+  browser?: boolean;
+}
+
+const { src, alt, caption, browser = false } = Astro.props;
+const uniqueId = `screenshot-${Math.random().toString(36).slice(2, 9)}`;
+---
+
+<figure class="not-prose my-8">
+  <div
+    class="screenshot-container relative cursor-zoom-in"
+    data-dialog-id={uniqueId}
+    role="button"
+    tabindex="0"
+    aria-label={`Увеличить: ${alt}`}
+  >
+    {browser ? (
+      <div class="overflow-hidden rounded-xl border border-zinc-200 shadow-lg shadow-zinc-900/10 dark:border-zinc-700 dark:shadow-zinc-950/40">
+        {/* Browser chrome */}
+        <div class="flex items-center gap-2 border-b border-zinc-200 bg-zinc-100 px-4 py-2.5 dark:border-zinc-700 dark:bg-zinc-800">
+          <div class="flex gap-1.5">
+            <span class="h-3 w-3 rounded-full bg-red-400/80 dark:bg-red-500/60" />
+            <span class="h-3 w-3 rounded-full bg-amber-400/80 dark:bg-amber-500/60" />
+            <span class="h-3 w-3 rounded-full bg-emerald-400/80 dark:bg-emerald-500/60" />
+          </div>
+          <div class="mx-2 flex-1 rounded-md bg-white px-3 py-1 text-xs text-zinc-400 dark:bg-zinc-900 dark:text-zinc-500">
+            <span class="select-none">https://</span>
+          </div>
+        </div>
+        {/* Browser content */}
+        <div class="bg-white dark:bg-zinc-900">
+          <img
+            src={src}
+            alt={alt}
+            class="w-full"
+            loading="lazy"
+          />
+        </div>
+      </div>
+    ) : (
+      <div class="overflow-hidden rounded-xl border border-zinc-200 shadow-lg shadow-zinc-900/10 dark:border-zinc-700 dark:shadow-zinc-950/40">
+        <img
+          src={src}
+          alt={alt}
+          class="w-full"
+          loading="lazy"
+        />
+      </div>
+    )}
+
+    <!-- Zoom hint -->
+    <div class="screenshot-zoom-hint absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-zinc-900/70 px-2 py-1 text-xs text-zinc-300 opacity-0 transition-opacity dark:bg-zinc-100/70 dark:text-zinc-700">
+      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" />
+      </svg>
+      Увеличить
+    </div>
+  </div>
+
+  {caption && (
+    <figcaption class="mt-3 text-center text-sm italic text-zinc-500 dark:text-zinc-400">
+      {caption}
+    </figcaption>
+  )}
+
+  <!-- Lightbox dialog -->
+  <dialog
+    id={uniqueId}
+    class="screenshot-dialog m-0 h-full max-h-full w-full max-w-full border-0 bg-black/90 p-4 backdrop:bg-transparent sm:p-8"
+  >
+    <div class="flex h-full w-full flex-col items-center justify-center">
+      <button
+        class="screenshot-dialog-close absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
+        type="button"
+        aria-label="Закрыть"
+      >
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <div class="flex max-h-[90vh] max-w-[90vw] items-center justify-center overflow-auto">
+        <img
+          src={src}
+          alt={alt}
+          class="max-h-[85vh] max-w-full object-contain"
+        />
+      </div>
+
+      {caption && (
+        <p class="mt-4 text-center text-sm text-zinc-400">{caption}</p>
+      )}
+    </div>
+  </dialog>
+</figure>
+
+<style>
+  .screenshot-container:hover .screenshot-zoom-hint {
+    opacity: 1;
+  }
+
+  .screenshot-dialog::backdrop {
+    background: transparent;
+  }
+
+  .screenshot-dialog[open] {
+    animation: screenshot-fade-in 0.2s ease-out;
+  }
+
+  @keyframes screenshot-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+</style>
+
+<script>
+  function initScreenshots() {
+    document.querySelectorAll('.screenshot-container').forEach((container) => {
+      const dialogId = container.getAttribute('data-dialog-id');
+      if (!dialogId) return;
+
+      const dialog = document.getElementById(dialogId) as HTMLDialogElement | null;
+      if (!dialog) return;
+
+      function openDialog() {
+        dialog!.showModal();
+      }
+
+      function closeDialog() {
+        dialog!.close();
+      }
+
+      container.addEventListener('click', openDialog);
+      container.addEventListener('keydown', (e) => {
+        if ((e as KeyboardEvent).key === 'Enter' || (e as KeyboardEvent).key === ' ') {
+          e.preventDefault();
+          openDialog();
+        }
+      });
+
+      const closeBtn = dialog.querySelector('.screenshot-dialog-close');
+      closeBtn?.addEventListener('click', closeDialog);
+
+      dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) closeDialog();
+      });
+
+      dialog.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeDialog();
+      });
+    });
+  }
+
+  initScreenshots();
+  document.addEventListener('astro:after-swap', initScreenshots);
+</script>

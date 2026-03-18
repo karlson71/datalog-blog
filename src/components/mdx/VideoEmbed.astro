@@ -1,0 +1,130 @@
+---
+interface Props {
+  url: string;
+  title?: string;
+  timestamp?: string;
+}
+
+const { url, title, timestamp } = Astro.props;
+
+function extractVideoInfo(url: string): { provider: 'youtube' | 'rutube' | null; id: string | null } {
+  // YouTube: youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID
+  const ytPatterns = [
+    /(?:youtube\.com\/watch\?.*v=)([\w-]+)/,
+    /(?:youtu\.be\/)([\w-]+)/,
+    /(?:youtube\.com\/embed\/)([\w-]+)/,
+  ];
+  for (const pattern of ytPatterns) {
+    const match = url.match(pattern);
+    if (match) return { provider: 'youtube', id: match[1] };
+  }
+
+  // RuTube: rutube.ru/video/ID
+  const rtMatch = url.match(/rutube\.ru\/video\/([\w-]+)/);
+  if (rtMatch) return { provider: 'rutube', id: rtMatch[1] };
+
+  return { provider: null, id: null };
+}
+
+const { provider, id } = extractVideoInfo(url);
+
+function buildEmbedUrl(): string {
+  if (provider === 'youtube') {
+    const params = new URLSearchParams({ rel: '0' });
+    if (timestamp) params.set('start', timestamp);
+    return `https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`;
+  }
+  if (provider === 'rutube') {
+    return `https://rutube.ru/play/embed/${id}`;
+  }
+  return url;
+}
+
+const embedUrl = buildEmbedUrl();
+
+function buildThumbnailUrl(): string | null {
+  if (provider === 'youtube') {
+    return `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+  }
+  return null;
+}
+
+const thumbnailUrl = buildThumbnailUrl();
+const videoTitle = title || 'Видео';
+const uniqueId = `video-${id || Math.random().toString(36).slice(2, 9)}`;
+---
+
+<figure class="not-prose my-8">
+  <div
+    id={uniqueId}
+    class="video-embed relative overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900"
+    data-embed-url={embedUrl}
+    data-title={videoTitle}
+  >
+    <div class="relative aspect-video">
+      {thumbnailUrl ? (
+        <img
+          src={thumbnailUrl}
+          alt={videoTitle}
+          class="absolute inset-0 h-full w-full object-cover"
+          loading="lazy"
+        />
+      ) : (
+        <div class="absolute inset-0 flex items-center justify-center bg-zinc-200 dark:bg-zinc-800">
+          <svg class="h-12 w-12 text-zinc-400 dark:text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+          </svg>
+        </div>
+      )}
+
+      <!-- Play button overlay -->
+      <button
+        class="video-play-btn absolute inset-0 flex cursor-pointer items-center justify-center bg-black/30 transition-colors hover:bg-black/40"
+        aria-label={`Воспроизвести: ${videoTitle}`}
+        type="button"
+      >
+        <span class="flex h-16 w-16 items-center justify-center rounded-full bg-cyan-500 text-white shadow-lg shadow-cyan-500/30 transition-transform hover:scale-110 sm:h-20 sm:w-20">
+          <svg class="ml-1 h-7 w-7 sm:h-8 sm:w-8" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  {title && (
+    <figcaption class="mt-2 text-center text-sm text-zinc-500 dark:text-zinc-400">
+      {title}
+    </figcaption>
+  )}
+</figure>
+
+<script>
+  function initVideoEmbeds() {
+    document.querySelectorAll('.video-embed').forEach((container) => {
+      const btn = container.querySelector('.video-play-btn');
+      if (!btn || container.classList.contains('video-loaded')) return;
+
+      btn.addEventListener('click', () => {
+        const embedUrl = container.getAttribute('data-embed-url');
+        const title = container.getAttribute('data-title') || 'Видео';
+        const wrapper = container.querySelector('.relative.aspect-video') as HTMLElement;
+        if (!wrapper || !embedUrl) return;
+
+        const iframe = document.createElement('iframe');
+        iframe.src = embedUrl + (embedUrl.includes('?') ? '&' : '?') + 'autoplay=1';
+        iframe.title = title;
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.allowFullscreen = true;
+        iframe.className = 'absolute inset-0 h-full w-full';
+
+        wrapper.innerHTML = '';
+        wrapper.appendChild(iframe);
+        container.classList.add('video-loaded');
+      });
+    });
+  }
+
+  initVideoEmbeds();
+  document.addEventListener('astro:after-swap', initVideoEmbeds);
+</script>

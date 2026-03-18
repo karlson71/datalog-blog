@@ -1,6 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import PostMeta from '../components/PostMeta.astro';
+import BookmarkButton from '../components/BookmarkButton.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 import ReadingProgress from '../components/ReadingProgress.astro';
 import TelegramCTA from '../components/TelegramCTA.astro';
@@ -39,7 +40,10 @@ const postUrl = `${SITE_URL}/blog/${post.id}/`;
   <article class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
     <!-- Article header -->
     <header class="mx-auto max-w-3xl">
-      <PostMeta pubDate={pubDate} minutesRead={minutesRead} category={category} />
+      <div class="flex items-start justify-between gap-4">
+        <PostMeta pubDate={pubDate} minutesRead={minutesRead} category={category} />
+        <BookmarkButton slug={post.id} title={title} description={description} category={category} />
+      </div>
       <h1 class="mt-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl lg:text-5xl">
         {title}
       </h1>
