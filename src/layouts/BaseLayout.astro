@@ -16,6 +16,7 @@ interface Props {
   modifiedTime?: Date;
   seoType?: 'website' | 'blogPost';
   slug?: string;
+  readingTime?: string;
 }
 
 const {
@@ -27,6 +28,7 @@ const {
   modifiedTime,
   seoType = 'website',
   slug,
+  readingTime,
 } = Astro.props;
 ---
 
@@ -50,6 +52,7 @@ const {
       modifiedTime={modifiedTime}
       image={image}
       slug={slug}
+      readingTime={readingTime}
     />
     <ClientRouter />
   </head>
@@ -61,5 +64,52 @@ const {
     <Footer />
     <BackToTop />
     <KeyboardNav />
+
+    <!-- Heading anchor links + scroll reveal -->
+    <script>
+      function initHeadingAnchors() {
+        document.querySelectorAll('.prose h2[id], .prose h3[id]').forEach((heading) => {
+          if (heading.querySelector('.heading-anchor')) return;
+          const anchor = document.createElement('a');
+          anchor.className = 'heading-anchor';
+          anchor.href = `#${heading.id}`;
+          anchor.textContent = '#';
+          anchor.title = 'Скопировать ссылку';
+          anchor.addEventListener('click', (e) => {
+            e.preventDefault();
+            const url = `${window.location.origin}${window.location.pathname}#${heading.id}`;
+            navigator.clipboard.writeText(url).then(() => {
+              anchor.textContent = '✓';
+              setTimeout(() => { anchor.textContent = '#'; }, 1500);
+            });
+          });
+          heading.prepend(anchor);
+        });
+      }
+
+      function initScrollReveal() {
+        const elements = document.querySelectorAll('.scroll-reveal');
+        if (elements.length === 0) return;
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+        );
+        elements.forEach((el) => observer.observe(el));
+      }
+
+      initHeadingAnchors();
+      initScrollReveal();
+      document.addEventListener('astro:after-swap', () => {
+        initHeadingAnchors();
+        initScrollReveal();
+      });
+    </script>
   </body>
 </html>

@@ -6,21 +6,23 @@ interface Props {
 const { readingTime } = Astro.props;
 ---
 
-<!-- Progress bar -->
+<!-- Progress bar (clickable → scroll to top) -->
 <div
   id="reading-progress"
-  class="fixed left-0 top-0 z-50 h-[3px] bg-gradient-to-r from-cyan-400 via-cyan-500 to-teal-400 shadow-[0_0_8px_rgba(34,211,238,0.4)] transition-[width] duration-150 ease-out"
+  class="fixed left-0 top-0 z-50 h-[3px] cursor-pointer bg-gradient-to-r from-cyan-400 via-cyan-500 to-teal-400 shadow-[0_0_8px_rgba(34,211,238,0.4)] transition-[width] duration-150 ease-out"
   style="width: 0%"
+  role="progressbar"
+  aria-label="Прогресс чтения"
 />
 
 <!-- Time remaining badge -->
 {readingTime && (
   <div
     id="reading-time-badge"
-    class="fixed right-4 top-3 z-50 hidden items-center gap-1.5 rounded-full border border-zinc-700/50 bg-zinc-900/80 px-3 py-1.5 text-xs font-medium text-zinc-300 shadow-lg backdrop-blur-md transition-all duration-300 dark:border-zinc-600/50 sm:right-6 sm:text-sm"
+    class="fixed right-3 top-3 z-50 hidden items-center gap-1 rounded-full border border-zinc-300/80 bg-white/80 px-2 py-1 text-[11px] font-medium text-zinc-600 shadow-md backdrop-blur-md transition-all duration-300 sm:right-6 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm dark:border-zinc-600/50 dark:bg-zinc-900/80 dark:text-zinc-300"
     data-total-minutes={readingTime}
   >
-    <svg class="h-3.5 w-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <svg class="h-3 w-3 text-cyan-500 sm:h-3.5 sm:w-3.5 dark:text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
       <circle cx="12" cy="12" r="10" />
       <path d="M12 6v6l4 2" />
     </svg>
@@ -35,8 +37,14 @@ const { readingTime } = Astro.props;
     const timeText = document.getElementById('time-remaining-text');
     if (!bar) return;
 
+    // Click progress bar → scroll to top
+    bar.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
     const totalMinutesStr = badge?.getAttribute('data-total-minutes') || '';
     const totalMinutes = parseInt(totalMinutesStr.replace(/\D/g, ''), 10) || 0;
+    const isMobile = window.innerWidth < 640;
 
     let ticking = false;
 
@@ -46,7 +54,6 @@ const { readingTime } = Astro.props;
       const scrolled = Math.min(progress * 100, 100);
       bar!.style.width = `${scrolled}%`;
 
-      // Update time remaining badge
       if (badge && timeText && totalMinutes > 0) {
         if (progress < 0.03 || progress >= 0.97) {
           badge.classList.add('hidden');
@@ -55,7 +62,7 @@ const { readingTime } = Astro.props;
           badge.classList.remove('hidden');
           badge.classList.add('flex');
           const remaining = Math.max(1, Math.ceil(totalMinutes * (1 - progress)));
-          timeText.textContent = `~${remaining} мин`;
+          timeText.textContent = isMobile ? `~${remaining}м` : `~${remaining} мин`;
         }
       }
 

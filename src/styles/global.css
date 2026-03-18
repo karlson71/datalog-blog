@@ -68,3 +68,55 @@ body {
 .prose a:hover {
   text-decoration-color: theme('colors.cyan.400');
 }
+
+/* Anchor links on headings */
+.prose h2,
+.prose h3 {
+  position: relative;
+}
+
+.prose h2 .heading-anchor,
+.prose h3 .heading-anchor {
+  position: absolute;
+  left: -1.5em;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  color: theme('colors.cyan.400');
+  text-decoration: none;
+  font-weight: 400;
+  font-size: 0.8em;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+
+.prose h2:hover .heading-anchor,
+.prose h3:hover .heading-anchor {
+  opacity: 0.7;
+}
+
+.prose h2 .heading-anchor:hover,
+.prose h3 .heading-anchor:hover {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .prose h2 .heading-anchor,
+  .prose h3 .heading-anchor {
+    left: auto;
+    right: 0;
+    font-size: 0.7em;
+  }
+}
+
+/* Scroll reveal animations */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.scroll-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
