@@ -3,6 +3,7 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import BackToTop from '../components/BackToTop.astro';
+import KeyboardNav from '../components/KeyboardNav.astro';
 import SEO from '../components/SEO.astro';
 import { ClientRouter } from 'astro:transitions';
 
@@ -39,6 +40,7 @@ const {
       type={type}
       publishedTime={publishedTime}
       modifiedTime={modifiedTime}
+      slug={slug}
     />
     <SEO
       type={seoType}
@@ -58,5 +60,6 @@ const {
     </main>
     <Footer />
     <BackToTop />
+    <KeyboardNav />
   </body>
 </html>

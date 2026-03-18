@@ -17,6 +17,7 @@ const blog = defineCollection({
         'marketing-analytics',
       ]),
       tags: z.array(z.string()).default([]),
+      difficulty: z.enum(['beginner', 'intermediate', 'advanced']).default('intermediate'),
       draft: z.boolean().default(false),
     }),
 });

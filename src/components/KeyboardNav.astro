@@ -1,0 +1,174 @@
+<!-- Keyboard shortcuts for power users -->
+<button
+  id="keyboard-help-btn"
+  type="button"
+  aria-label="Горячие клавиши"
+  class="fixed bottom-6 left-6 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-400 shadow-lg backdrop-blur transition-all duration-200 hover:border-cyan-500/30 hover:text-cyan-600 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-500 dark:hover:border-cyan-400/30 dark:hover:text-cyan-400"
+>
+  <kbd class="text-sm font-medium">?</kbd>
+</button>
+
+<dialog
+  id="keyboard-help-dialog"
+  class="m-0 mx-auto mt-[15vh] w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-0 shadow-2xl backdrop:bg-zinc-950/50 backdrop:backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900"
+>
+  <div class="p-6">
+    <div class="mb-4 flex items-center justify-between">
+      <h2 class="text-lg font-bold text-zinc-900 dark:text-zinc-100">Горячие клавиши</h2>
+      <button
+        id="keyboard-help-close"
+        type="button"
+        aria-label="Закрыть"
+        class="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+      >
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <table class="w-full text-sm">
+      <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+        <tr>
+          <td class="py-2.5 pr-4">
+            <div class="flex gap-1">
+              <kbd class="inline-flex h-6 min-w-[24px] items-center justify-center rounded border border-zinc-300 bg-zinc-100 px-1.5 text-xs font-medium text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">j</kbd>
+              <span class="text-zinc-400">/</span>
+              <kbd class="inline-flex h-6 min-w-[24px] items-center justify-center rounded border border-zinc-300 bg-zinc-100 px-1.5 text-xs font-medium text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">k</kbd>
+            </div>
+          </td>
+          <td class="py-2.5 text-zinc-600 dark:text-zinc-400">Следующая / предыдущая статья</td>
+        </tr>
+        <tr>
+          <td class="py-2.5 pr-4">
+            <kbd class="inline-flex h-6 min-w-[24px] items-center justify-center rounded border border-zinc-300 bg-zinc-100 px-1.5 text-xs font-medium text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">/</kbd>
+          </td>
+          <td class="py-2.5 text-zinc-600 dark:text-zinc-400">Открыть поиск</td>
+        </tr>
+        <tr>
+          <td class="py-2.5 pr-4">
+            <kbd class="inline-flex h-6 min-w-[24px] items-center justify-center rounded border border-zinc-300 bg-zinc-100 px-1.5 text-xs font-medium text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">b</kbd>
+          </td>
+          <td class="py-2.5 text-zinc-600 dark:text-zinc-400">Сохранить в закладки</td>
+        </tr>
+        <tr>
+          <td class="py-2.5 pr-4">
+            <kbd class="inline-flex h-6 min-w-[24px] items-center justify-center rounded border border-zinc-300 bg-zinc-100 px-1.5 text-xs font-medium text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">?</kbd>
+          </td>
+          <td class="py-2.5 text-zinc-600 dark:text-zinc-400">Показать горячие клавиши</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="mt-4 text-xs text-zinc-400 dark:text-zinc-500">
+      Горячие клавиши не работают при вводе текста
+    </p>
+  </div>
+</dialog>
+
+<script>
+  function initKeyboardNav() {
+    const helpBtn = document.getElementById('keyboard-help-btn') as HTMLButtonElement;
+    const helpDialog = document.getElementById('keyboard-help-dialog') as HTMLDialogElement;
+    const helpClose = document.getElementById('keyboard-help-close') as HTMLButtonElement;
+    if (!helpBtn || !helpDialog || !helpClose) return;
+
+    function openHelp() {
+      helpDialog.showModal();
+    }
+
+    function closeHelp() {
+      helpDialog.close();
+    }
+
+    helpBtn.addEventListener('click', openHelp);
+    helpClose.addEventListener('click', closeHelp);
+    helpDialog.addEventListener('click', (e) => {
+      if (e.target === helpDialog) closeHelp();
+    });
+
+    function isTyping(): boolean {
+      const el = document.activeElement;
+      if (!el) return false;
+      const tag = el.tagName.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+      if ((el as HTMLElement).isContentEditable) return true;
+      return false;
+    }
+
+    function isBlogPostPage(): boolean {
+      return window.location.pathname.startsWith('/blog/') && window.location.pathname !== '/blog/';
+    }
+
+    function getAdjacentPostLinks(): { prev: string | null; next: string | null } {
+      // Look for related post links on the page
+      const relatedLinks = document.querySelectorAll('a[href^="/blog/"]');
+      const links: string[] = [];
+      relatedLinks.forEach((a) => {
+        const href = a.getAttribute('href');
+        if (href && href !== window.location.pathname && !links.includes(href)) {
+          links.push(href);
+        }
+      });
+      return {
+        prev: links.length > 1 ? links[links.length - 1] : null,
+        next: links.length > 0 ? links[0] : null,
+      };
+    }
+
+    document.addEventListener('keydown', (e) => {
+      // Skip if inside an open dialog (except our own)
+      if (helpDialog.open && e.key !== 'Escape') return;
+      if (document.querySelector('dialog[open]') && !helpDialog.open) return;
+
+      if (isTyping()) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      switch (e.key) {
+        case '?': {
+          e.preventDefault();
+          if (helpDialog.open) {
+            closeHelp();
+          } else {
+            openHelp();
+          }
+          break;
+        }
+        case '/': {
+          e.preventDefault();
+          const searchDialog = document.getElementById('search-dialog') as HTMLDialogElement | null;
+          if (searchDialog) {
+            searchDialog.showModal();
+            const input = document.getElementById('search-input') as HTMLInputElement | null;
+            if (input) input.focus();
+          }
+          break;
+        }
+        case 'b': {
+          if (!isBlogPostPage()) break;
+          e.preventDefault();
+          const bookmarkBtn = document.querySelector('bookmark-btn .bookmark-toggle') as HTMLButtonElement | null;
+          if (bookmarkBtn) bookmarkBtn.click();
+          break;
+        }
+        case 'j': {
+          if (!isBlogPostPage()) break;
+          e.preventDefault();
+          const { next } = getAdjacentPostLinks();
+          if (next) window.location.href = next;
+          break;
+        }
+        case 'k': {
+          if (!isBlogPostPage()) break;
+          e.preventDefault();
+          const { prev } = getAdjacentPostLinks();
+          if (prev) window.location.href = prev;
+          break;
+        }
+      }
+    });
+  }
+
+  initKeyboardNav();
+  document.addEventListener('astro:after-swap', initKeyboardNav);
+</script>

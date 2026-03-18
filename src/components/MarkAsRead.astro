@@ -1,0 +1,67 @@
+---
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+---
+
+<mark-as-read data-slug={slug}></mark-as-read>
+
+<script>
+  function initMarkAsRead() {
+    const STORAGE_KEY = 'datalog_read_posts';
+
+    function getReadPosts(): string[] {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      } catch {
+        return [];
+      }
+    }
+
+    function saveReadPosts(posts: string[]) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+    }
+
+    document.querySelectorAll('mark-as-read').forEach((el) => {
+      const slug = el.getAttribute('data-slug');
+      if (!slug) return;
+
+      let marked = false;
+
+      function checkScroll() {
+        if (marked) return;
+        const article = el.closest('article');
+        if (!article) return;
+
+        const rect = article.getBoundingClientRect();
+        const articleHeight = rect.height;
+        const scrolledPast = -rect.top;
+        const progress = scrolledPast / articleHeight;
+
+        if (progress >= 0.7) {
+          marked = true;
+          const readPosts = getReadPosts();
+          if (!readPosts.includes(slug)) {
+            readPosts.push(slug);
+            saveReadPosts(readPosts);
+          }
+          window.removeEventListener('scroll', checkScroll);
+        }
+      }
+
+      // Check if already read, skip listener setup
+      const readPosts = getReadPosts();
+      if (readPosts.includes(slug)) {
+        marked = true;
+        return;
+      }
+
+      window.addEventListener('scroll', checkScroll, { passive: true });
+    });
+  }
+
+  initMarkAsRead();
+  document.addEventListener('astro:after-swap', initMarkAsRead);
+</script>

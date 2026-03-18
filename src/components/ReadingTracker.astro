@@ -1,0 +1,65 @@
+---
+interface Props {
+  totalPosts: number;
+}
+
+const { totalPosts } = Astro.props;
+---
+
+<reading-tracker data-total={totalPosts} class="block">
+  <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+    <div class="mb-3 flex items-baseline justify-between">
+      <span class="text-sm text-zinc-500 dark:text-zinc-400">
+        Прочитано <span class="tracker-count font-bold text-cyan-500 dark:text-cyan-400">0</span> из <span class="font-bold text-zinc-700 dark:text-zinc-200">{totalPosts}</span> статей
+      </span>
+    </div>
+    <div class="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+      <div
+        class="tracker-bar h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400 transition-all duration-500 ease-out"
+        style="width: 0%"
+      ></div>
+    </div>
+    <p class="tracker-message mt-2 text-sm italic text-zinc-400 dark:text-zinc-500">
+      Начни своё путешествие в аналитику
+    </p>
+  </div>
+</reading-tracker>
+
+<script>
+  function initReadingTracker() {
+    const STORAGE_KEY = 'datalog_read_posts';
+
+    function getReadPosts(): string[] {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      } catch {
+        return [];
+      }
+    }
+
+    function getMessage(count: number): string {
+      if (count === 0) return 'Начни своё путешествие в аналитику';
+      if (count <= 2) return 'Хорошее начало!';
+      if (count <= 4) return 'Ты на верном пути 🔥';
+      return 'Ты — машина! 💪';
+    }
+
+    document.querySelectorAll('reading-tracker').forEach((el) => {
+      const total = parseInt(el.getAttribute('data-total') || '0', 10);
+      const readPosts = getReadPosts();
+      const count = Math.min(readPosts.length, total);
+      const percent = total > 0 ? (count / total) * 100 : 0;
+
+      const countEl = el.querySelector('.tracker-count') as HTMLElement;
+      const barEl = el.querySelector('.tracker-bar') as HTMLElement;
+      const messageEl = el.querySelector('.tracker-message') as HTMLElement;
+
+      if (countEl) countEl.textContent = String(count);
+      if (barEl) barEl.style.width = `${percent}%`;
+      if (messageEl) messageEl.textContent = getMessage(count);
+    });
+  }
+
+  initReadingTracker();
+  document.addEventListener('astro:after-swap', initReadingTracker);
+</script>

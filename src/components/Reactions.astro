@@ -1,0 +1,149 @@
+---
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+---
+
+<reaction-bar data-slug={slug} class="block">
+  <div class="mt-8 rounded-xl border border-zinc-200 p-5 dark:border-zinc-800">
+    <p class="mb-4 text-center text-sm font-medium text-zinc-500 dark:text-zinc-400">
+      Была ли статья полезной?
+    </p>
+    <div class="flex items-center justify-center gap-3">
+      <button
+        type="button"
+        data-reaction="fire"
+        aria-label="Полезно"
+        class="reaction-btn flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2 text-sm transition-all duration-200 select-none hover:border-cyan-500/30 hover:bg-cyan-50 active:scale-95 dark:border-zinc-700 dark:hover:border-cyan-400/30 dark:hover:bg-cyan-400/10"
+      >
+        <span class="reaction-emoji inline-block transition-transform duration-200">🔥</span>
+        <span class="reaction-label text-zinc-500 dark:text-zinc-400">Полезно</span>
+        <span class="reaction-count font-medium text-zinc-600 dark:text-zinc-300">0</span>
+      </button>
+      <button
+        type="button"
+        data-reaction="bulb"
+        aria-label="Узнал новое"
+        class="reaction-btn flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2 text-sm transition-all duration-200 select-none hover:border-cyan-500/30 hover:bg-cyan-50 active:scale-95 dark:border-zinc-700 dark:hover:border-cyan-400/30 dark:hover:bg-cyan-400/10"
+      >
+        <span class="reaction-emoji inline-block transition-transform duration-200">💡</span>
+        <span class="reaction-label text-zinc-500 dark:text-zinc-400">Узнал новое</span>
+        <span class="reaction-count font-medium text-zinc-600 dark:text-zinc-300">0</span>
+      </button>
+      <button
+        type="button"
+        data-reaction="mind"
+        aria-label="Вау"
+        class="reaction-btn flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2 text-sm transition-all duration-200 select-none hover:border-cyan-500/30 hover:bg-cyan-50 active:scale-95 dark:border-zinc-700 dark:hover:border-cyan-400/30 dark:hover:bg-cyan-400/10"
+      >
+        <span class="reaction-emoji inline-block transition-transform duration-200">🤯</span>
+        <span class="reaction-label text-zinc-500 dark:text-zinc-400">Вау</span>
+        <span class="reaction-count font-medium text-zinc-600 dark:text-zinc-300">0</span>
+      </button>
+    </div>
+  </div>
+</reaction-bar>
+
+<style>
+  .reaction-btn.active {
+    border-color: rgb(6 182 212 / 0.5);
+    background-color: rgb(6 182 212 / 0.1);
+    box-shadow: 0 0 8px rgb(6 182 212 / 0.15);
+  }
+  .reaction-btn.active .reaction-emoji {
+    transform: scale(1.2);
+  }
+  .reaction-btn.active .reaction-label {
+    color: rgb(6 182 212);
+  }
+  .reaction-btn.active .reaction-count {
+    color: rgb(6 182 212);
+  }
+  @keyframes reaction-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); }
+    100% { transform: scale(1.2); }
+  }
+  .reaction-animate {
+    animation: reaction-pop 0.3s ease-out;
+  }
+</style>
+
+<script>
+  function initReactions() {
+    const STORAGE_KEY = 'datalog_reactions';
+
+    function hashCode(str: string): number {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash |= 0;
+      }
+      return Math.abs(hash);
+    }
+
+    function getReactions(): Record<string, { fire: boolean; bulb: boolean; mind: boolean }> {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      } catch {
+        return {};
+      }
+    }
+
+    function saveReactions(reactions: Record<string, any>) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(reactions));
+    }
+
+    document.querySelectorAll('reaction-bar').forEach((el) => {
+      const slug = el.getAttribute('data-slug')!;
+      const baseCount = hashCode(slug) % 20 + 5;
+      const reactions = getReactions();
+      const slugReactions = reactions[slug] || { fire: false, bulb: false, mind: false };
+
+      const buttons = el.querySelectorAll('.reaction-btn') as NodeListOf<HTMLButtonElement>;
+
+      function updateUI() {
+        const current = getReactions()[slug] || { fire: false, bulb: false, mind: false };
+        buttons.forEach((btn) => {
+          const type = btn.getAttribute('data-reaction') as 'fire' | 'bulb' | 'mind';
+          const isActive = current[type];
+          const count = baseCount + (isActive ? 1 : 0);
+          const countEl = btn.querySelector('.reaction-count') as HTMLElement;
+          countEl.textContent = String(count);
+          if (isActive) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+      }
+
+      updateUI();
+
+      buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const type = btn.getAttribute('data-reaction') as 'fire' | 'bulb' | 'mind';
+          const allReactions = getReactions();
+          const current = allReactions[slug] || { fire: false, bulb: false, mind: false };
+          current[type] = !current[type];
+          allReactions[slug] = current;
+          saveReactions(allReactions);
+
+          // Animate emoji
+          const emoji = btn.querySelector('.reaction-emoji') as HTMLElement;
+          emoji.classList.remove('reaction-animate');
+          void emoji.offsetWidth;
+          emoji.classList.add('reaction-animate');
+
+          updateUI();
+        });
+      });
+    });
+  }
+
+  initReactions();
+  document.addEventListener('astro:after-swap', initReactions);
+</script>

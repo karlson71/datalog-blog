@@ -1,0 +1,189 @@
+---
+---
+
+<script>
+  async function initCopyAsImage() {
+    const figures = document.querySelectorAll('figure.expressive-code');
+    if (figures.length === 0) return;
+
+    figures.forEach((figure) => {
+      // Skip if button already added
+      if (figure.querySelector('.copy-as-image-btn')) return;
+
+      const pre = figure.querySelector('pre');
+      if (!pre) return;
+
+      // Create the button
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'copy-as-image-btn';
+      btn.setAttribute('aria-label', 'Скопировать как картинку');
+      btn.title = 'Скопировать как картинку';
+      btn.innerHTML = `
+        <svg class="copy-img-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Z" />
+        </svg>
+      `;
+
+      // Position the button inside the figure
+      const figureEl = figure as HTMLElement;
+      figureEl.style.position = 'relative';
+      figureEl.appendChild(btn);
+
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        btn.classList.add('copy-img-loading');
+
+        try {
+          const { default: html2canvas } = await import('html2canvas');
+
+          // Capture the figure element (includes header + code)
+          const canvas = await html2canvas(figureEl, {
+            backgroundColor: '#18181b', // zinc-900
+            scale: 2,
+            logging: false,
+            useCORS: true,
+            removeContainer: true,
+            ignoreElements: (el: Element) => {
+              return el.classList.contains('copy-as-image-btn');
+            },
+          });
+
+          // Add watermark
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.font = '12px system-ui, sans-serif';
+            ctx.fillStyle = 'rgb(6 182 212)'; // cyan-500
+            ctx.textAlign = 'right';
+            ctx.fillText('datalog-blog.vercel.app', canvas.width - 16, canvas.height - 12);
+          }
+
+          // Try clipboard API first
+          if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+            const blob = await new Promise<Blob>((resolve, reject) => {
+              canvas.toBlob((b) => {
+                if (b) resolve(b);
+                else reject(new Error('Failed to create blob'));
+              }, 'image/png');
+            });
+
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob }),
+            ]);
+
+            showToast(btn, 'Скопировано!');
+          } else {
+            // Fallback: download the image
+            const link = document.createElement('a');
+            link.download = 'code-snippet.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast(btn, 'Скачано!');
+          }
+        } catch (err) {
+          console.error('Copy as image failed:', err);
+          showToast(btn, 'Ошибка');
+        } finally {
+          btn.classList.remove('copy-img-loading');
+        }
+      });
+    });
+  }
+
+  function showToast(anchor: HTMLElement, text: string) {
+    // Remove existing toast
+    const existing = anchor.parentElement?.querySelector('.copy-img-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('span');
+    toast.className = 'copy-img-toast';
+    toast.textContent = text;
+    anchor.parentElement?.appendChild(toast);
+
+    // Position near the button
+    requestAnimationFrame(() => {
+      toast.classList.add('copy-img-toast-visible');
+      setTimeout(() => {
+        toast.classList.remove('copy-img-toast-visible');
+        setTimeout(() => toast.remove(), 300);
+      }, 1500);
+    });
+  }
+
+  initCopyAsImage();
+  document.addEventListener('astro:after-swap', initCopyAsImage);
+</script>
+
+<style is:global>
+  .copy-as-image-btn {
+    position: absolute;
+    top: 42px;
+    right: 8px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 0.375rem;
+    border: none;
+    background: rgb(63 63 70 / 0.6);
+    color: rgb(161 161 170);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, background-color 0.2s, color 0.2s;
+  }
+
+  figure.expressive-code:hover .copy-as-image-btn {
+    opacity: 1;
+  }
+
+  .copy-as-image-btn:hover {
+    background: rgb(63 63 70 / 0.9);
+    color: rgb(6 182 212);
+  }
+
+  .copy-as-image-btn:active {
+    transform: scale(0.9);
+  }
+
+  .copy-as-image-btn.copy-img-loading {
+    opacity: 1;
+    pointer-events: none;
+  }
+
+  .copy-as-image-btn.copy-img-loading .copy-img-icon {
+    animation: copy-img-spin 0.8s linear infinite;
+  }
+
+  @keyframes copy-img-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Toast */
+  .copy-img-toast {
+    position: absolute;
+    top: 78px;
+    right: 8px;
+    z-index: 50;
+    white-space: nowrap;
+    border-radius: 0.5rem;
+    background-color: rgb(39 39 42);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgb(244 244 245);
+    opacity: 0;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .copy-img-toast-visible {
+    opacity: 1;
+  }
+</style>
