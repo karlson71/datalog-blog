@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import BlogPostCard from '../../components/BlogPostCard.astro';
 import Pagination from '../../components/Pagination.astro';
 import CategoryBadge from '../../components/CategoryBadge.astro';
+import ReadingTracker from '../../components/ReadingTracker.astro';
 import { getCollection } from 'astro:content';
 import { CATEGORIES, type CategoryKey } from '../../lib/constants';
 import type { GetStaticPaths } from 'astro';
@@ -43,6 +44,11 @@ const categoryEntries = Object.entries(CATEGORIES) as [CategoryKey, (typeof CATE
           {cat.label}
         </a>
       ))}
+    </div>
+
+    <!-- Reading tracker -->
+    <div class="mt-6">
+      <ReadingTracker totalPosts={page.total} />
     </div>
 
     <!-- Posts -->

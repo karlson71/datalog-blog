@@ -10,6 +10,7 @@ import RelatedPosts from '../components/RelatedPosts.astro';
 import CopyAsImage from '../components/CopyAsImage.astro';
 import Reactions from '../components/Reactions.astro';
 import MarkAsRead from '../components/MarkAsRead.astro';
+import PostNavigation from '../components/PostNavigation.astro';
 import { getCollection } from 'astro:content';
 import { getRelatedPosts } from '../lib/utils';
 import { SITE_URL } from '../lib/constants';
@@ -24,9 +25,17 @@ interface Props {
 const { post, headings, minutesRead } = Astro.props;
 const { title, description, pubDate, updatedDate, category, difficulty } = post.data;
 
-const allPosts = await getCollection('blog');
+const allPosts = (await getCollection('blog'))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
 const relatedPosts = getRelatedPosts(post, allPosts);
 const postUrl = `${SITE_URL}/blog/${post.id}/`;
+
+// Find prev/next posts
+const currentIndex = allPosts.findIndex((p) => p.id === post.id);
+const prevPost = currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : null;
+const nextPost = currentIndex > 0 ? allPosts[currentIndex - 1] : null;
 ---
 
 <BaseLayout
@@ -38,7 +47,7 @@ const postUrl = `${SITE_URL}/blog/${post.id}/`;
   seoType="blogPost"
   slug={post.id}
 >
-  <ReadingProgress />
+  <ReadingProgress readingTime={minutesRead} />
 
   <article class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
     <CopyAsImage />
@@ -88,6 +97,11 @@ const postUrl = `${SITE_URL}/blog/${post.id}/`;
     <div class="mx-auto mt-12 max-w-3xl border-t border-zinc-200 pt-6 dark:border-zinc-800">
       <ShareButtons title={title} url={postUrl} />
       <Reactions slug={post.id} />
+    </div>
+
+    <!-- Prev/Next navigation -->
+    <div class="mx-auto mt-12 max-w-3xl">
+      <PostNavigation prevPost={prevPost} nextPost={nextPost} />
     </div>
 
     <!-- Related posts -->
