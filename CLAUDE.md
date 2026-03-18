@@ -58,6 +58,8 @@ src/
 │   ├── TelegramCTA.astro      # CTA подписки (sidebar|inline|bottom варианты)
 │   ├── ShareButtons.astro     # Шеринг: Telegram, X, копировать ссылку
 │   ├── RelatedPosts.astro     # Похожие статьи (скоринг)
+│   ├── PostNavigation.astro   # Prev/Next навигация между постами
+│   ├── TextSelectionShare.astro # Share выделенного текста (Telegram + copy)
 │   ├── Pagination.astro       # Пагинация списка постов
 │   └── mdx/                   # Компоненты для использования в MDX-постах
 │       ├── VideoEmbed.astro   # YouTube/RuTube с lazy-load
@@ -201,6 +203,9 @@ import SQLPlayground from '../../components/mdx/SQLPlayground.astro';
 - **CategoryBadge внутри карточек**: передавать `linked={false}` чтобы избежать вложенных `<a>` тегов
 - **SearchDialog** рендерится ВНЕ `<nav>` (после `</header>`), иначе скрыт на мобилке
 - GitHub push: `gh auth setup-git` нужен для HTTPS credentials, `gh auth refresh -s workflow` для пуша workflow-файлов
+- **ThemeToggle**: обязательно `<script is:inline>` + event delegation на document. Модульные скрипты с View Transitions выполняются один раз — onclick на кнопке теряется при навигации
+- **iOS Safari**: `touch-action: manipulation` глобально на все кнопки/ссылки (fix double-tap-to-zoom)
+- **SVG внутри кнопок**: `pointer-events-none` чтобы клик не перехватывался иконкой
 
 ## Деплой и инфраструктура
 
@@ -236,6 +241,14 @@ import SQLPlayground from '../../components/mdx/SQLPlayground.astro';
 - [x] SSL-сертификат (Let's Encrypt, истекает 2026-06-16)
 - [x] Production nginx.conf с HTTPS, gzip, кэшированием
 - [x] SEO Skill Pack (5 skills для контентного пайплайна)
+- [x] Прогресс-бар 3px с glow + badge «~X мин осталось» (click → scroll-to-top)
+- [x] Prev/Next навигация между постами
+- [x] Индикатор «Прочитано» на карточках (из localStorage)
+- [x] ReadingTracker подключён на /blog
+- [x] Anchor links (#) на H2/H3 с копированием URL
+- [x] FAQPage JSON-LD schema + timeRequired в BlogPosting
+- [x] Text Selection Share (выделение текста → Telegram/копировать)
+- [x] iOS Safari fix: touch-action: manipulation + is:inline theme toggle
 - [ ] Яндекс.Вебмастер + отправка sitemap
 - [ ] Яндекс.Метрика (скрипт за env-переменной)
 
