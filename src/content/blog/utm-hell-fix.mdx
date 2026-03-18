@@ -12,6 +12,7 @@ import Callout from '../../components/mdx/Callout.astro';
 import TLDR from '../../components/mdx/TLDR.astro';
 import StepByStep from '../../components/mdx/StepByStep.astro';
 import SQLPlayground from '../../components/mdx/SQLPlayground.astro';
+import Diagram from '../../components/mdx/Diagram.astro';
 
 <TLDR>
 - UTM-бардак — это не «ой, регистр перепутали». Это системная проблема: legacy, команды без стандартов, редиректы, убивающие метки, и бизнес-логика, которая не влезает в рамки Метрики
@@ -77,6 +78,45 @@ https://site.ru/login?return_to=https://site.ru/dashboard?utm_source=yandex&utm_
 
 UTM-метки **вложены в параметр `return_to`**, а не стоят на верхнем уровне URL. Яндекс.Метрика их просто игнорирует. Хит уходит на сервер без разметки, и трафик падает в `(direct)`.
 
+<Diagram alt="Как редиректы убивают UTM-метки" caption="Слева — UTM работает. Справа — UTM потерян из-за вложенности в redirect-параметр.">
+  <div class="flex flex-col gap-4 p-4 text-sm sm:flex-row sm:gap-6 sm:p-6">
+    <div class="flex-1 rounded-xl border-2 border-emerald-500/30 bg-emerald-500/5 p-4 dark:bg-emerald-500/10">
+      <div class="mb-3 flex items-center gap-2 font-bold text-emerald-600 dark:text-emerald-400">
+        <span class="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-xs text-white">✓</span>
+        Правильно
+      </div>
+      <div class="space-y-2">
+        <div class="rounded-lg bg-white/80 p-2 font-mono text-xs dark:bg-zinc-800/80">
+          site.ru/page<span class="text-emerald-600 dark:text-emerald-400">?utm_source=yandex&utm_medium=cpc</span>
+        </div>
+        <div class="flex items-center gap-2 text-zinc-500">
+          <span>↓</span> <span>UTM на верхнем уровне</span>
+        </div>
+        <div class="rounded-lg bg-emerald-100 p-2 text-center font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+          Метрика видит: yandex / cpc
+        </div>
+      </div>
+    </div>
+    <div class="flex-1 rounded-xl border-2 border-red-500/30 bg-red-500/5 p-4 dark:bg-red-500/10">
+      <div class="mb-3 flex items-center gap-2 font-bold text-red-600 dark:text-red-400">
+        <span class="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white">✗</span>
+        Неправильно
+      </div>
+      <div class="space-y-2">
+        <div class="rounded-lg bg-white/80 p-2 font-mono text-xs dark:bg-zinc-800/80">
+          site.ru/login?return_to=...<span class="text-red-600 dark:text-red-400">?utm_source=yandex</span>
+        </div>
+        <div class="flex items-center gap-2 text-zinc-500">
+          <span>↓</span> <span>UTM вложен в параметр</span>
+        </div>
+        <div class="rounded-lg bg-red-100 p-2 text-center font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+          Метрика видит: (direct) / (none)
+        </div>
+      </div>
+    </div>
+  </div>
+</Diagram>
+
 <Callout type="danger" title="Как проверить">
 Открой Яндекс.Метрику → отчёт «Страницы входа». Отфильтруй по URL-ам с `return_to` или `redirect`. Если видишь трафик с UTM-метками внутри параметров редиректа — метки не работают. Нужно фиксить на уровне фронтенда: UTM должны оставаться на верхнем уровне URL после всех редиректов.
 </Callout>
@@ -107,7 +147,68 @@ UTM-метки **вложены в параметр `return_to`**, а не ст�
 - Дата в начале `campaign` для сортировки
 - Никаких пробелов, кириллицы, спецсимволов
 
+<Diagram alt="Анатомия UTM-ссылки" caption="Каждый параметр отвечает за свой уровень атрибуции">
+  <div class="overflow-x-auto p-4 sm:p-6">
+    <div class="min-w-[340px] rounded-xl bg-zinc-100 p-4 font-mono text-xs dark:bg-zinc-800/80 sm:text-sm">
+      <div class="text-zinc-500 dark:text-zinc-400">https://site.ru/landing<span class="text-zinc-400 dark:text-zinc-500">?</span></div>
+      <div class="mt-1 flex flex-wrap gap-x-0">
+        <span class="border-b-2 border-violet-500 text-violet-600 dark:text-violet-400">utm_source=<strong>yandex</strong></span>
+        <span class="text-zinc-400">&</span>
+        <span class="border-b-2 border-cyan-500 text-cyan-600 dark:text-cyan-400">utm_medium=<strong>cpc</strong></span>
+        <span class="text-zinc-400">&</span>
+        <span class="border-b-2 border-amber-500 text-amber-600 dark:text-amber-400">utm_campaign=<strong>202603_promo_spring</strong></span>
+      </div>
+    </div>
+    <div class="mt-4 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3 sm:text-sm">
+      <div class="flex items-start gap-2 rounded-lg border-l-2 border-violet-500 bg-violet-50 p-2 dark:bg-violet-900/20">
+        <span class="mt-0.5 font-bold text-violet-600 dark:text-violet-400">source</span>
+        <span class="text-zinc-600 dark:text-zinc-400">Откуда пришёл: площадка, платформа</span>
+      </div>
+      <div class="flex items-start gap-2 rounded-lg border-l-2 border-cyan-500 bg-cyan-50 p-2 dark:bg-cyan-900/20">
+        <span class="mt-0.5 font-bold text-cyan-600 dark:text-cyan-400">medium</span>
+        <span class="text-zinc-600 dark:text-zinc-400">Как пришёл: cpc, email, social</span>
+      </div>
+      <div class="flex items-start gap-2 rounded-lg border-l-2 border-amber-500 bg-amber-50 p-2 dark:bg-amber-900/20">
+        <span class="mt-0.5 font-bold text-amber-600 dark:text-amber-400">campaign</span>
+        <span class="text-zinc-600 dark:text-zinc-400">Зачем: конкретная кампания + дата</span>
+      </div>
+    </div>
+  </div>
+</Diagram>
+
 ## Как привести всё в порядок: алгоритм
+
+<Diagram alt="Pipeline нормализации UTM" caption="7 шагов от хаоса к порядку — каждый обязателен">
+  <div class="flex flex-col gap-1 p-3 text-xs sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-0 sm:p-6 sm:text-sm">
+    <div class="flex items-center gap-2 rounded-lg bg-violet-100 px-3 py-2 font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
+      <span>1</span> <span>Стандарт</span>
+    </div>
+    <span class="hidden text-zinc-400 sm:block">→</span>
+    <div class="flex items-center gap-2 rounded-lg bg-cyan-100 px-3 py-2 font-medium text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">
+      <span>2</span> <span>Генератор</span>
+    </div>
+    <span class="hidden text-zinc-400 sm:block">→</span>
+    <div class="flex items-center gap-2 rounded-lg bg-amber-100 px-3 py-2 font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+      <span>3</span> <span>Маппинг</span>
+    </div>
+    <span class="hidden text-zinc-400 sm:block">→</span>
+    <div class="flex items-center gap-2 rounded-lg bg-rose-100 px-3 py-2 font-medium text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
+      <span>4</span> <span>Ответственные</span>
+    </div>
+    <span class="hidden text-zinc-400 sm:block">→</span>
+    <div class="flex items-center gap-2 rounded-lg bg-teal-100 px-3 py-2 font-medium text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">
+      <span>5</span> <span>SQL-нормализация</span>
+    </div>
+    <span class="hidden text-zinc-400 sm:block">→</span>
+    <div class="flex items-center gap-2 rounded-lg bg-indigo-100 px-3 py-2 font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+      <span>6</span> <span>Бизнес-каналы</span>
+    </div>
+    <span class="hidden text-zinc-400 sm:block">→</span>
+    <div class="flex items-center gap-2 rounded-lg bg-emerald-100 px-3 py-2 font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+      <span>7</span> <span>Тесты</span>
+    </div>
+  </div>
+</Diagram>
 
 <StepByStep>
 1. **Зафиксируй стандарт.** Одна страница в Confluence / Notion / Google Docs. Таблица выше — минимум. Отправляй каждому новому подрядчику до начала работы.
@@ -233,6 +334,40 @@ ORDER BY total_sessions DESC;"
 Никому нельзя верить. Стандарт без мониторинга — это рекомендация, которую нарушат через неделю. Команды будут пренебрегать правилами и делать по-старому. Твоя задача — вовремя это выявлять.
 </Callout>
 
+<Diagram alt="Dashboard мониторинга UTM-качества" caption="Три ключевые метрики, которые нужно отслеживать еженедельно">
+  <div class="p-4 sm:p-6">
+    <div class="grid grid-cols-3 gap-2 sm:gap-4">
+      <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center dark:border-emerald-800 dark:bg-emerald-900/20">
+        <div class="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Доля other</div>
+        <div class="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400 sm:text-3xl">8%</div>
+        <div class="mt-0.5 text-xs text-emerald-600 dark:text-emerald-400">Норма</div>
+      </div>
+      <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center dark:border-amber-800 dark:bg-amber-900/20">
+        <div class="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Доля direct</div>
+        <div class="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400 sm:text-3xl">22%</div>
+        <div class="mt-0.5 text-xs text-amber-600 dark:text-amber-400">Внимание</div>
+      </div>
+      <div class="rounded-xl border border-cyan-200 bg-cyan-50 p-3 text-center dark:border-cyan-800 dark:bg-cyan-900/20">
+        <div class="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Новые UTM</div>
+        <div class="mt-1 text-2xl font-bold text-cyan-600 dark:text-cyan-400 sm:text-3xl">14</div>
+        <div class="mt-0.5 text-xs text-cyan-600 dark:text-cyan-400">За неделю</div>
+      </div>
+    </div>
+    <div class="mt-4 flex items-end gap-1 rounded-lg bg-zinc-100 p-3 dark:bg-zinc-800/50" style="height: 80px">
+      <div class="flex-1 rounded-sm bg-cyan-500" style="height: 90%" title="paid: 42%"></div>
+      <div class="flex-1 rounded-sm bg-violet-500" style="height: 65%" title="organic: 28%"></div>
+      <div class="flex-1 rounded-sm bg-amber-500" style="height: 50%" title="direct: 22%"></div>
+      <div class="flex-1 rounded-sm bg-zinc-400" style="height: 20%" title="other: 8%"></div>
+    </div>
+    <div class="mt-1.5 flex gap-3 text-[10px] text-zinc-500 dark:text-zinc-400 sm:text-xs">
+      <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-cyan-500"></span>paid 42%</span>
+      <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-violet-500"></span>organic 28%</span>
+      <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-amber-500"></span>direct 22%</span>
+      <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-zinc-400"></span>other 8%</span>
+    </div>
+  </div>
+</Diagram>
+
 Алгоритм мониторинга:
 
 1. **Собери референс.** Возьми 3-6 месяцев данных с корректной разметкой. Посчитай среднюю долю визитов на каждый бизнес-канал.
@@ -278,6 +413,27 @@ ORDER BY cs.week DESC, share_pct DESC;
 </Callout>
 
 ## Хаос → Порядок: до и после
+
+<Diagram alt="Визуальное сравнение: хаос vs порядок в UTM" caption="Нормализация превращает 4 строки мусора в 1 строку правды">
+  <div class="flex flex-col items-center gap-4 p-4 sm:flex-row sm:p-6">
+    <div class="w-full flex-1 space-y-1.5 rounded-xl border-2 border-red-500/20 bg-red-50/50 p-3 dark:bg-red-900/10 sm:p-4">
+      <div class="mb-2 text-xs font-bold uppercase tracking-wider text-red-500">Хаос</div>
+      <div class="rounded bg-white px-2 py-1 font-mono text-xs text-red-700 dark:bg-zinc-800 dark:text-red-400">Google / cpc → 1,200</div>
+      <div class="rounded bg-white px-2 py-1 font-mono text-xs text-red-700 dark:bg-zinc-800 dark:text-red-400">google / CPC → 800</div>
+      <div class="rounded bg-white px-2 py-1 font-mono text-xs text-red-700 dark:bg-zinc-800 dark:text-red-400">google.com / paid → 350</div>
+      <div class="rounded bg-white px-2 py-1 font-mono text-xs text-red-700 dark:bg-zinc-800 dark:text-red-400">Гугл / cpc → 150</div>
+    </div>
+    <div class="flex flex-col items-center gap-1 text-zinc-400">
+      <span class="text-2xl">→</span>
+      <span class="whitespace-nowrap text-[10px] font-medium uppercase tracking-wider text-cyan-500">Нормализация</span>
+    </div>
+    <div class="w-full flex-1 rounded-xl border-2 border-emerald-500/20 bg-emerald-50/50 p-3 dark:bg-emerald-900/10 sm:p-4">
+      <div class="mb-2 text-xs font-bold uppercase tracking-wider text-emerald-500">Порядок</div>
+      <div class="rounded bg-white px-2 py-1 font-mono text-xs text-emerald-700 dark:bg-zinc-800 dark:text-emerald-400">google / cpc / paid_performance → 2,500</div>
+      <div class="mt-3 text-center text-xs text-emerald-600 dark:text-emerald-400">1 строка. Чистые данные. Верные решения.</div>
+    </div>
+  </div>
+</Diagram>
 
 **До (хаос):**
 
