@@ -6,7 +6,7 @@ import expressiveCode from 'astro-expressive-code';
 import { remarkReadingTime } from './src/plugins/remark-reading-time.mjs';
 
 export default defineConfig({
-  site: 'https://datalog-blog.vercel.app',
+  site: 'https://datalog-blog.ru',
   integrations: [
     expressiveCode({
       themes: ['github-dark', 'github-light'],

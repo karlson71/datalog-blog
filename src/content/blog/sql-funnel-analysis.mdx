@@ -8,6 +8,8 @@ tags: ["sql", "воронки", "конверсия", "clickhouse", "ecommerce"]
 draft: false
 ---
 
+import SQLPlayground from '../../components/mdx/SQLPlayground.astro';
+
 У тебя есть данные о каждом клике пользователя. Ты знаешь, что конверсия сайта — 2%. Но между «зашёл на сайт» и «купил» есть 4-5 шагов, и ты не знаешь, на каком из них теряешь 98% людей. Давай это исправим — на чистом SQL, без BI-конструкторов и готовых инструментов.
 
 ## Постановка задачи
@@ -98,6 +100,34 @@ ORDER BY step_order;
 | purchase | 1,800 |
 
 Конверсия 3.6%. Неплохо. Но **где именно** проблема?
+
+Попробуй сам — вот тебе песочница с данными воронки:
+
+<SQLPlayground
+  title="Попробуй: базовая воронка"
+  setup="CREATE TABLE user_events (user_id INTEGER, event_type TEXT, event_time TEXT);
+INSERT INTO user_events VALUES (1,'visit','2026-03-01 10:00'),(1,'catalog','2026-03-01 10:05'),(1,'product_view','2026-03-01 10:10'),(1,'add_to_cart','2026-03-01 10:15'),(1,'purchase','2026-03-01 10:30');
+INSERT INTO user_events VALUES (2,'visit','2026-03-01 11:00'),(2,'catalog','2026-03-01 11:05'),(2,'product_view','2026-03-01 11:10');
+INSERT INTO user_events VALUES (3,'visit','2026-03-01 12:00'),(3,'catalog','2026-03-01 12:05'),(3,'product_view','2026-03-01 12:08'),(3,'add_to_cart','2026-03-01 12:15');
+INSERT INTO user_events VALUES (4,'visit','2026-03-01 13:00'),(4,'catalog','2026-03-01 13:10');
+INSERT INTO user_events VALUES (5,'visit','2026-03-01 14:00'),(5,'catalog','2026-03-01 14:03'),(5,'product_view','2026-03-01 14:10'),(5,'add_to_cart','2026-03-01 14:20'),(5,'purchase','2026-03-01 14:35');
+INSERT INTO user_events VALUES (6,'visit','2026-03-01 15:00');
+INSERT INTO user_events VALUES (7,'visit','2026-03-01 16:00'),(7,'catalog','2026-03-01 16:05'),(7,'product_view','2026-03-01 16:12');
+INSERT INTO user_events VALUES (8,'visit','2026-03-01 17:00'),(8,'catalog','2026-03-01 17:02');"
+  query="SELECT
+  event_type AS step,
+  COUNT(DISTINCT user_id) AS users
+FROM user_events
+GROUP BY event_type
+ORDER BY
+  CASE event_type
+    WHEN 'visit' THEN 1
+    WHEN 'catalog' THEN 2
+    WHEN 'product_view' THEN 3
+    WHEN 'add_to_cart' THEN 4
+    WHEN 'purchase' THEN 5
+  END;"
+/>
 
 ## Шаг 2: Конверсия между шагами
 

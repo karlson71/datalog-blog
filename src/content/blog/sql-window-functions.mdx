@@ -8,6 +8,8 @@ tags: ["sql", "оконные функции", "аналитика"]
 draft: false
 ---
 
+import SQLPlayground from '../../components/mdx/SQLPlayground.astro';
+
 Оконные функции — один из самых мощных инструментов аналитического SQL. Они позволяют выполнять вычисления по набору строк, связанных с текущей строкой, без группировки данных.
 
 ## Что такое оконные функции?
@@ -49,6 +51,22 @@ WHERE month = '2026-03';
 - `RANK()` — одинаковый ранг для равных значений, следующий ранг пропускается
 - `DENSE_RANK()` — одинаковый ранг для равных значений, без пропусков
 
+Попробуй сам — вот рабочие данные:
+
+<SQLPlayground
+  title="Попробуй: ROW_NUMBER, RANK, DENSE_RANK"
+  setup="CREATE TABLE campaigns (campaign_name TEXT, ad_spend REAL, conversions INTEGER);
+INSERT INTO campaigns VALUES ('Поиск Яндекс',45000,320),('ВК Таргет',32000,280),('Telegram Ads',18000,280),('Google Ads',55000,410),('MyTarget',22000,150),('Дзен',12000,95),('Email рассылка',5000,410);"
+  query="SELECT
+  campaign_name,
+  ad_spend,
+  conversions,
+  ROW_NUMBER() OVER (ORDER BY conversions DESC) AS rn,
+  RANK() OVER (ORDER BY conversions DESC) AS rnk,
+  DENSE_RANK() OVER (ORDER BY conversions DESC) AS dense_rnk
+FROM campaigns;"
+/>
+
 ## LAG и LEAD: сравниваем с предыдущими периодами
 
 Это must-have для маркетинговой аналитики. Представьте: нужно сравнить конверсию каждого дня с предыдущим.
@@ -68,6 +86,24 @@ SELECT
 FROM daily_metrics
 WHERE event_date >= CURRENT_DATE - INTERVAL '30 days';
 ```
+
+<SQLPlayground
+  title="Попробуй: LAG — сравнение с прошлым днём"
+  setup="CREATE TABLE daily_metrics (event_date TEXT, sessions INTEGER, conversions INTEGER);
+INSERT INTO daily_metrics VALUES ('2026-03-10',1200,48),('2026-03-11',1350,52),('2026-03-12',980,38),('2026-03-13',1100,45),('2026-03-14',1500,61),('2026-03-15',1420,55),('2026-03-16',900,32);"
+  query="SELECT
+  event_date,
+  sessions,
+  conversions,
+  LAG(conversions, 1) OVER (ORDER BY event_date) AS prev_day,
+  conversions - LAG(conversions, 1) OVER (ORDER BY event_date) AS diff,
+  ROUND(
+    CAST(conversions - LAG(conversions, 1) OVER (ORDER BY event_date) AS REAL)
+    / LAG(conversions, 1) OVER (ORDER BY event_date) * 100,
+    1
+  ) AS change_pct
+FROM daily_metrics;"
+/>
 
 ## NTILE: сегментация пользователей
 

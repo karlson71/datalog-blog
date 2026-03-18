@@ -40,6 +40,12 @@ src/
 │   ├── SearchDialog.astro     # Мгновенный поиск (⌘K / Ctrl+K)
 │   ├── BookmarkButton.astro   # Сохранение статей в localStorage
 │   ├── BackToTop.astro        # Кнопка "наверх" при скролле
+│   ├── DifficultyBadge.astro  # Уровень: Новичок / Практик / Продвинутый
+│   ├── Reactions.astro        # Реакции 🔥💡🤯 (localStorage)
+│   ├── ReadingTracker.astro   # Прогресс чтения (сколько прочитано статей)
+│   ├── MarkAsRead.astro       # Автоматическая отметка «прочитано» (70% скролла)
+│   ├── CopyAsImage.astro      # Копирование блоков кода как картинка (html2canvas)
+│   ├── KeyboardNav.astro      # Горячие клавиши: j/k/?/b/ (⌘K поиск)
 │   ├── HeroSection.astro      # Главная: hero-блок
 │   ├── BlogPostCard.astro     # Карточка поста (с закладкой)
 │   ├── PostMeta.astro         # Дата + время чтения + категория
@@ -55,7 +61,9 @@ src/
 │       ├── Diagram.astro      # Диаграммы с lightbox
 │       ├── Screenshot.astro   # Скриншоты (опц. browser chrome mockup)
 │       ├── Callout.astro      # Блоки info/warning/tip/danger
-│       └── StepByStep.astro   # Пошаговые инструкции с нумерацией
+│       ├── StepByStep.astro   # Пошаговые инструкции с нумерацией
+│       ├── SQLPlayground.astro # Интерактивный SQL-песочница (sql.js WASM)
+│       └── TLDR.astro         # Блок «Суть за 30 секунд»
 ├── content/
 │   └── blog/                  # MDX-посты (6 статей)
 ├── content.config.ts          # Схема коллекции blog (Zod валидация)
@@ -68,6 +76,8 @@ src/
 │   ├── about.astro            # Страница "О проекте"
 │   ├── saved.astro            # Сохранённые статьи (localStorage)
 │   ├── rss.xml.ts             # RSS фид
+│   ├── og/
+│   │   └── [slug].png.ts     # Динамические OG-изображения (satori + resvg)
 │   └── blog/
 │       ├── [...page].astro          # Пагинированный список постов
 │       ├── [...slug].astro          # Динамический роут поста
@@ -117,7 +127,14 @@ src/
 - **Кнопка "Наверх"** — появляется при scrollY > 400
 - **Share** — Telegram, X/Twitter, копировать ссылку
 - **Related posts** — скоринг: категория +3, совпадающие теги +1
-- **MDX-компоненты** — VideoEmbed, Diagram, Screenshot, Callout, StepByStep
+- **MDX-компоненты** — VideoEmbed, Diagram, Screenshot, Callout, StepByStep, SQLPlayground, TLDR
+- **SQL Playground** — интерактивная песочница на sql.js (SQLite→WASM), Ctrl/Cmd+Enter запуск, кастомный setup (CREATE/INSERT), таблица результатов
+- **Копирование кода как картинка** — html2canvas 2x + циановый watermark «datalog-blog.vercel.app», clipboard API + fallback download
+- **Реакции** — 🔥 Полезно, 💡 Узнал новое, 🤯 Вау; localStorage (`datalog_reactions`), псевдо-коммьюнити счётчики
+- **Трекер чтения** — прогресс-бар + мотивационные сообщения, MarkAsRead при 70% скролла; localStorage (`datalog_read_posts`)
+- **Бейджи сложности** — beginner (Новичок, emerald), intermediate (Практик, cyan), advanced (Продвинутый, violet); на карточках и в шапке поста
+- **Динамические OG-изображения** — `/og/[slug].png` через satori + @resvg/resvg-js; тёмный фон, категория, заголовок, бренд
+- **Горячие клавиши** — j/k: навигация по постам, /: поиск, b: закладка, ?: оверлей со списком шорткатов
 
 ## Как добавить новый пост
 
@@ -130,17 +147,30 @@ description: "Описание до 160 символов для SEO"
 pubDate: 2026-03-18
 category: sql
 tags: ["sql", "clickhouse"]
+difficulty: intermediate  # beginner | intermediate | advanced
 draft: false
 ---
 
 import Callout from '../../components/mdx/Callout.astro';
-import VideoEmbed from '../../components/mdx/VideoEmbed.astro';
+import TLDR from '../../components/mdx/TLDR.astro';
+import SQLPlayground from '../../components/mdx/SQLPlayground.astro';
+
+<TLDR>
+- Ключевой пункт 1
+- Ключевой пункт 2
+</TLDR>
 
 Контент в MDX...
 
 <Callout type="tip" title="Совет">
 Текст совета
 </Callout>
+
+<SQLPlayground
+  title="Попробуй сам"
+  setup="CREATE TABLE users (id INT, name TEXT); INSERT INTO users VALUES (1, 'Alice');"
+  query="SELECT * FROM users;"
+/>
 ```
 
 ## SEO
@@ -166,16 +196,40 @@ import VideoEmbed from '../../components/mdx/VideoEmbed.astro';
 
 ## Текущее состояние
 
-- [x] Проект инициализирован и собирается (14 страниц, ~1.2 сек)
-- [x] 6 статей написаны
+- [x] Проект инициализирован и собирается (14 страниц + 6 OG PNG, ~5.9 сек на Vercel)
+- [x] 6 статей написаны (с difficulty, TLDR, SQL Playground)
 - [x] Адаптивный дизайн (mobile + desktop)
 - [x] Dark/light тема работает
 - [x] Название: Даталог
 - [x] Telegram-канал создан (@datalog_blog с группой обсуждений)
 - [x] Git + GitHub (github.com/karlson71/datalog-blog)
 - [x] Задеплоен на Vercel (datalog-blog.vercel.app)
-- [x] Поиск, закладки, back-to-top, MDX-компоненты
+- [x] Поиск (⌘K), закладки, back-to-top, MDX-компоненты
+- [x] SQL Playground (sql.js WASM)
+- [x] Копирование кода как картинка (html2canvas + watermark)
+- [x] TLDR «Суть за 30 секунд»
+- [x] Реакции (🔥💡🤯)
+- [x] Трекер чтения + MarkAsRead (70% скролла)
+- [x] Бейджи сложности (Новичок/Практик/Продвинутый)
+- [x] Динамические OG-изображения (satori + resvg)
+- [x] Горячие клавиши (j/k/b/?//)
 - [ ] Автодеплой Vercel ← GitHub (нужно связать аккаунты: vercel.com/account/login-connections)
 - [ ] Яндекс.Вебмастер + отправка sitemap
 - [ ] Яндекс.Метрика (скрипт за env-переменной)
-- [ ] Реальный контент (заменить демо-посты на боевые)
+
+## Важные зависимости (round 2)
+
+- `sql.js` — SQLite→WASM для SQLPlayground (CDN: cdnjs)
+- `html2canvas` — скриншоты блоков кода для CopyAsImage
+- `satori` + `@resvg/resvg-js` — генерация OG-изображений (SVG→PNG)
+
+## Custom Elements (client-side)
+
+Все интерактивные компоненты реализованы через паттерн Custom Elements для совместимости с View Transitions (`astro:after-swap`):
+
+| Элемент | Компонент | localStorage ключ |
+|---------|-----------|-------------------|
+| `<bookmark-btn>` | BookmarkButton.astro | `datalog_bookmarks` |
+| `<post-reactions>` | Reactions.astro | `datalog_reactions` |
+| `<sql-playground>` | SQLPlayground.astro | — |
+| `<reading-tracker>` | ReadingTracker.astro | `datalog_read_posts` |

@@ -240,7 +240,7 @@ export const GET: APIRoute = async ({ props }) => {
                       fontSize: '16px',
                       color: '#71717a',
                     },
-                    children: 'datalog-blog.vercel.app',
+                    children: 'datalog-blog.ru',
                   },
                 },
                 {

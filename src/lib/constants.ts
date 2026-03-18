@@ -1,7 +1,7 @@
 export const SITE_TITLE = 'Даталог';
 export const SITE_DESCRIPTION =
   'Блог о веб-аналитике, SQL, сквозной аналитике и визуализации данных. Практические руководства и кейсы.';
-export const SITE_URL = 'https://datalog-blog.vercel.app';
+export const SITE_URL = 'https://datalog-blog.ru';
 export const AUTHOR_NAME = 'Даталог';
 export const TELEGRAM_CHANNEL_URL = 'https://t.me/datalog_blog';
 export const TELEGRAM_CHANNEL_NAME = '@datalog_blog';
