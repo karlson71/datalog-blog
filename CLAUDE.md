@@ -218,7 +218,7 @@ import SQLPlayground from '../../components/mdx/SQLPlayground.astro';
 - **nginx:** конфиг в `server/nginx.conf` (gzip, кэширование, security headers, HTTP→HTTPS + www→non-www редиректы)
 - **Провижининг:** `server/setup.sh` (nginx, certbot, deploy user, firewall)
 - **CI/CD:** `.github/workflows/deploy.yml` — на push в main: checkout → Node 22 → npm ci → build → rsync
-- **GitHub Secrets:** `SERVER_IP`, `SERVER_USER`, `SSH_PRIVATE_KEY`
+- **GitHub Secrets:** `SERVER_IP`, `SERVER_USER`, `SSH_PRIVATE_KEY`, `YANDEX_METRIKA_ID`
 
 ## Текущее состояние
 
@@ -252,7 +252,7 @@ import SQLPlayground from '../../components/mdx/SQLPlayground.astro';
 - [x] Text Selection Share (выделение текста → Telegram/копировать)
 - [x] iOS Safari fix: touch-action: manipulation + is:inline theme toggle
 - [ ] Яндекс.Вебмастер + отправка sitemap
-- [ ] Яндекс.Метрика (скрипт за env-переменной)
+- [x] Яндекс.Метрика (счётчик 108159538, env `PUBLIC_YANDEX_METRIKA_ID`, GitHub Secret `YANDEX_METRIKA_ID`)
 
 ## Контентный пайплайн (Skills)
 
