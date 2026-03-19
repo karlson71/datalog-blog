@@ -1,0 +1,107 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+---
+
+<div class="not-prose my-8">
+  <sql-tabs>
+    {title && (
+      <div class="mb-3 flex items-center gap-2">
+        <svg class="h-5 w-5 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+        </svg>
+        <span class="text-base font-semibold text-zinc-900 dark:text-zinc-100">{title}</span>
+      </div>
+    )}
+
+    <div class="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
+      <div class="flex border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/80">
+        <button
+          type="button"
+          data-tab="postgres"
+          class="sql-tab-btn flex-1 border-b-2 border-cyan-500 px-4 py-2 text-sm font-medium text-cyan-600 transition-colors dark:border-cyan-400 dark:text-cyan-400"
+        >
+          PostgreSQL
+        </button>
+        <button
+          type="button"
+          data-tab="clickhouse"
+          class="sql-tab-btn flex-1 border-b-2 border-transparent px-4 py-2 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"
+        >
+          ClickHouse
+        </button>
+      </div>
+
+      <div class="sql-tab-panel" data-panel="postgres">
+        <slot name="postgres" />
+      </div>
+      <div class="sql-tab-panel hidden" data-panel="clickhouse">
+        <slot name="clickhouse" />
+      </div>
+    </div>
+  </sql-tabs>
+</div>
+
+<style>
+  .sql-tab-panel :global(.expressive-code) {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .sql-tab-panel :global(.expressive-code .frame) {
+    border-radius: 0 !important;
+    border: 0 !important;
+  }
+  .sql-tab-panel :global(.expressive-code pre) {
+    border-radius: 0 !important;
+  }
+</style>
+
+<script>
+  const DIALECT_KEY = 'datalog_sql_dialect';
+
+  function initSQLTabs() {
+    const allTabs = document.querySelectorAll('sql-tabs');
+    if (!allTabs.length) return;
+
+    function activateTab(container: Element, dialect: string) {
+      const buttons = container.querySelectorAll('.sql-tab-btn');
+      const panels = container.querySelectorAll('.sql-tab-panel');
+
+      buttons.forEach((btn) => {
+        const isActive = btn.getAttribute('data-tab') === dialect;
+        btn.classList.toggle('border-cyan-500', isActive);
+        btn.classList.toggle('dark:border-cyan-400', isActive);
+        btn.classList.toggle('text-cyan-600', isActive);
+        btn.classList.toggle('dark:text-cyan-400', isActive);
+        btn.classList.toggle('border-transparent', !isActive);
+        btn.classList.toggle('text-zinc-500', !isActive);
+        btn.classList.toggle('dark:text-zinc-400', !isActive);
+      });
+
+      panels.forEach((panel) => {
+        panel.classList.toggle('hidden', panel.getAttribute('data-panel') !== dialect);
+      });
+    }
+
+    const savedDialect = localStorage.getItem(DIALECT_KEY) || 'postgres';
+
+    allTabs.forEach((el) => {
+      activateTab(el, savedDialect);
+
+      el.querySelectorAll('.sql-tab-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const dialect = btn.getAttribute('data-tab')!;
+          localStorage.setItem(DIALECT_KEY, dialect);
+          // Sync all instances on page
+          allTabs.forEach((other) => activateTab(other, dialect));
+        });
+      });
+    });
+  }
+
+  initSQLTabs();
+  document.addEventListener('astro:after-swap', initSQLTabs);
+</script>

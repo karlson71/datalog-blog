@@ -75,16 +75,6 @@ const { slug } = Astro.props;
   function initReactions() {
     const STORAGE_KEY = 'datalog_reactions';
 
-    function hashCode(str: string): number {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash |= 0;
-      }
-      return Math.abs(hash);
-    }
-
     function getReactions(): Record<string, { fire: boolean; bulb: boolean; mind: boolean }> {
       try {
         return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
@@ -99,7 +89,6 @@ const { slug } = Astro.props;
 
     document.querySelectorAll('reaction-bar').forEach((el) => {
       const slug = el.getAttribute('data-slug')!;
-      const baseCount = hashCode(slug) % 20 + 5;
       const reactions = getReactions();
       const slugReactions = reactions[slug] || { fire: false, bulb: false, mind: false };
 
@@ -110,7 +99,7 @@ const { slug } = Astro.props;
         buttons.forEach((btn) => {
           const type = btn.getAttribute('data-reaction') as 'fire' | 'bulb' | 'mind';
           const isActive = current[type];
-          const count = baseCount + (isActive ? 1 : 0);
+          const count = isActive ? 1 : 0;
           const countEl = btn.querySelector('.reaction-count') as HTMLElement;
           countEl.textContent = String(count);
           if (isActive) {
