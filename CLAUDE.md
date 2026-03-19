@@ -68,6 +68,7 @@ src/
 │       ├── Callout.astro      # Блоки info/warning/tip/danger
 │       ├── StepByStep.astro   # Пошаговые инструкции с нумерацией
 │       ├── SQLPlayground.astro # Интерактивный SQL-песочница (sql.js WASM)
+│       ├── SQLTabs.astro      # Табы PostgreSQL/ClickHouse для SQL-блоков
 │       └── TLDR.astro         # Блок «Суть за 30 секунд»
 ├── content/
 │   └── blog/                  # MDX-посты (6 статей)
@@ -138,10 +139,11 @@ server/
 - **Кнопка "Наверх"** — появляется при scrollY > 400
 - **Share** — Telegram, X/Twitter, копировать ссылку
 - **Related posts** — скоринг: категория +3, совпадающие теги +1
-- **MDX-компоненты** — VideoEmbed, Diagram, Screenshot, Callout, StepByStep, SQLPlayground, TLDR
+- **MDX-компоненты** — VideoEmbed, Diagram, Screenshot, Callout, StepByStep, SQLPlayground, SQLTabs, TLDR
 - **SQL Playground** — интерактивная песочница на sql.js (SQLite→WASM), Ctrl/Cmd+Enter запуск, кастомный setup (CREATE/INSERT), таблица результатов
+- **SQLTabs** — табы PostgreSQL/ClickHouse для SQL-блоков; localStorage (`datalog_sql_dialect`), синхронизация всех табов на странице, PostgreSQL по дефолту
 - **Копирование кода как картинка** — html2canvas 2x + циановый watermark «datalog-blog.ru», clipboard API + fallback download
-- **Реакции** — 🔥 Полезно, 💡 Узнал новое, 🤯 Вау; localStorage (`datalog_reactions`), псевдо-коммьюнити счётчики
+- **Реакции** — 🔥 Полезно, 💡 Узнал новое, 🤯 Вау; localStorage (`datalog_reactions`), реальные счётчики (0 по дефолту)
 - **Трекер чтения** — прогресс-бар + мотивационные сообщения, MarkAsRead при 70% скролла; localStorage (`datalog_read_posts`)
 - **Бейджи сложности** — beginner (Новичок, emerald), intermediate (Практик, cyan), advanced (Продвинутый, violet); на карточках и в шапке поста
 - **Динамические OG-изображения** — `/og/[slug].png` через satori + @resvg/resvg-js; тёмный фон, категория, заголовок, бренд
