@@ -24,3 +24,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .vercel
+
+# Playwright MCP
+.playwright-mcp/
+
+# Working drafts & archives
+confluence_lpc_attribution_draft.md
+seo-skill-pack.zip
