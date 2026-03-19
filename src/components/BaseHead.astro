@@ -92,7 +92,15 @@ const fullTitle = Astro.url.pathname === '/' ? SITE_TITLE : `${title} — ${SITE
         trackLinks: true,
         accurateTrackBounce: true,
         webvisor: true,
-        ecommerce: 'dataLayer'
+        ecommerce: 'dataLayer',
+        triggerEvent: true
+      });
+      // View Transitions (SPA-like navigation) — send hit on each page swap
+      document.addEventListener('astro:after-swap', function() {
+        ym(metrikaId, 'hit', window.location.href, {
+          title: document.title,
+          referer: document.referrer
+        });
       });
     </script>
     <noscript>
