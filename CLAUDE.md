@@ -253,6 +253,10 @@ import SQLPlayground from '../../components/mdx/SQLPlayground.astro';
 - [x] iOS Safari fix: touch-action: manipulation + is:inline theme toggle
 - [ ] Яндекс.Вебмастер + отправка sitemap
 - [x] Яндекс.Метрика (счётчик 108159538, env `PUBLIC_YANDEX_METRIKA_ID`, GitHub Secret `YANDEX_METRIKA_ID`)
+- [x] SPA-трекинг Метрики для View Transitions (`astro:after-swap` → `ym('hit')`)
+- [x] data-ytm атрибуты на всех интерактивных элементах для YTM
+- [x] dataLayer `article_view` событие при просмотре статьи
+- [x] YTM контейнер (ID 1278351) — триггеры и теги для reachGoal
 
 ## Контентный пайплайн (Skills)
 
@@ -273,6 +277,25 @@ import SQLPlayground from '../../components/mdx/SQLPlayground.astro';
 - `sql.js` — SQLite→WASM для SQLPlayground (CDN: cdnjs)
 - `html2canvas` — скриншоты блоков кода для CopyAsImage
 - `satori` + `@resvg/resvg-js` — генерация OG-изображений (SVG→PNG)
+
+## Аналитика и трекинг
+
+- **Яндекс.Метрика**: счётчик `108159538`, env `PUBLIC_YANDEX_METRIKA_ID`
+- **SPA-трекинг**: `astro:after-swap` → `ym(id, 'hit', url)` для View Transitions
+- **YTM**: контейнер `1278351`, `dataLayer` инициализируется в `BaseHead.astro`
+- **data-ytm атрибуты** для триггеров YTM:
+
+| Атрибут | Где используется | Доп. данные |
+|---------|-----------------|-------------|
+| `data-ytm="tg-subscribe"` | TelegramCTA, Footer | `data-ytm-pos`: sidebar/inline/bottom/footer |
+| `data-ytm="article-card"` | BlogPostCard | `data-ytm-slug`: slug статьи |
+| `data-ytm="share"` | ShareButtons | `data-ytm-platform`: telegram/x/copy |
+| `data-ytm="post-nav"` | PostNavigation | `data-ytm-dir`: prev/next |
+| `data-ytm="search"` | Header | — |
+| `data-ytm="logo"` | Header | — |
+
+- **dataLayer events**: `article_view` (slug, category, title) — пушится в `BlogPost.astro`
+- **Цели Метрики (reachGoal)**: `tg_subscribe_click`, `article_card_click`, `share_click`, `post_nav_click`, `scroll_50`, `scroll_100`, `article_view`
 
 ## Custom Elements (client-side)
 
