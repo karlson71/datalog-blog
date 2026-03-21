@@ -17,6 +17,8 @@ if (!prevPost && !nextPost) return null;
     {prevPost && (
       <a
         href={`/blog/${prevPost.id}/`}
+        data-ytm="post-nav"
+        data-ytm-dir="prev"
         class="group flex flex-col rounded-xl border border-zinc-200 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/5 dark:border-zinc-800 dark:hover:border-cyan-400/30 dark:hover:shadow-cyan-400/5 sm:p-5"
       >
         <span class="mb-2 flex items-center gap-1 text-xs font-medium text-zinc-400 dark:text-zinc-500">
@@ -36,6 +38,8 @@ if (!prevPost && !nextPost) return null;
     {nextPost && (
       <a
         href={`/blog/${nextPost.id}/`}
+        data-ytm="post-nav"
+        data-ytm-dir="next"
         class={`group flex flex-col rounded-xl border border-zinc-200 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/5 dark:border-zinc-800 dark:hover:border-cyan-400/30 dark:hover:shadow-cyan-400/5 sm:p-5 ${prevPost ? 'sm:text-right' : ''}`}
       >
         <span class={`mb-2 flex items-center gap-1 text-xs font-medium text-zinc-400 dark:text-zinc-500 ${prevPost ? 'sm:justify-end' : ''}`}>

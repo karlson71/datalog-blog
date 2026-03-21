@@ -65,6 +65,11 @@ const fullTitle = Astro.url.pathname === '/' ? SITE_TITLE : `${title} — ${SITE
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={new URL(ogImage, SITE_URL)} />
 
+<!-- dataLayer for Yandex Tag Manager -->
+<script is:inline>
+  window.dataLayer = window.dataLayer || [];
+</script>
+
 <!-- Theme initialization (inline to prevent FOUC) -->
 <script is:inline>
   (function () {
